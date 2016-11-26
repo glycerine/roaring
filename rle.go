@@ -50,8 +50,8 @@ type runContainer32 struct {
 	iv   []interval32
 	card int
 
-	// avoid allocation during Search
-	myOpts SearchOptions
+	// avoid allocation during search
+	myOpts searchOptions
 }
 
 // interval32 is the internal to runContainer32
@@ -240,7 +240,7 @@ func newRunContainer32FromArray(arr *arrayContainer) *runContainer32 {
 	return &runContainer32{iv: m, card: actuallyAdded}
 }
 
-// Set adds the integers in vals to the set. Vals
+// set adds the integers in vals to the set. Vals
 // must be sorted in increasing order; if not, you should set
 // alreadySorted to false, and we will sort them in place for you.
 // (Be aware of this side effect -- it will affect the callers
@@ -248,11 +248,11 @@ func newRunContainer32FromArray(arr *arrayContainer) *runContainer32 {
 //
 // If you have a small number of additions to an already
 // big runContainer32, calling Add() may be faster.
-func (rc *runContainer32) Set(alreadySorted bool, vals ...uint32) {
+func (rc *runContainer32) set(alreadySorted bool, vals ...uint32) {
 
 	rc2 := newRunContainer32FromVals(alreadySorted, vals...)
-	//p("Set: rc2 is %s", rc2)
-	un := rc.Union(rc2)
+	//p("set: rc2 is %s", rc2)
+	un := rc.union(rc2)
 	rc.iv = un.iv
 	rc.card = 0
 }
@@ -320,9 +320,9 @@ func intersectInterval32s(a, b interval32) (res interval32, isEmpty bool) {
 	return
 }
 
-// Union merges two runContainer32s, producing
+// union merges two runContainer32s, producing
 // a new runContainer32 with the union of rc and b.
-func (rc *runContainer32) Union(b *runContainer32) *runContainer32 {
+func (rc *runContainer32) union(b *runContainer32) *runContainer32 {
 
 	// rc is also known as 'a' here, but golint insisted we
 	// call it rc for consistency with the rest of the methods.
@@ -454,28 +454,28 @@ func (rc *runContainer32) Union(b *runContainer32) *runContainer32 {
 
 	//p("making res out of m = %v", sliceToString32(m))
 	res := &runContainer32{iv: m}
-	//p("Union returning %s", res)
+	//p("union returning %s", res)
 	return res
 }
 
-// indexOfIntervalAtOrAfter is a helper for Union. We check
+// indexOfIntervalAtOrAfter is a helper for union. We check
 // for already and panic, as this is dedicated to use
-// by Union() and that should always be the case when
-// Union calls.
+// by union() and that should always be the case when
+// union calls.
 func (rc *runContainer32) indexOfIntervalAtOrAfter(key uint32, startIndex int) int {
 	rc.myOpts.StartIndex = startIndex
 	rc.myOpts.EndxIndex = 0
 
-	w, already, _ := rc.Search(key, &rc.myOpts)
+	w, already, _ := rc.search(key, &rc.myOpts)
 	if already {
 		return w
 	}
 	return w + 1
 }
 
-// Intersect returns a new runContainer32 holding the
+// intersect returns a new runContainer32 holding the
 // intersection of rc (also known as 'a')  and b.
-func (rc *runContainer32) Intersect(b *runContainer32) *runContainer32 {
+func (rc *runContainer32) intersect(b *runContainer32) *runContainer32 {
 
 	a := rc
 	numa := len(a.iv)
@@ -599,22 +599,22 @@ toploop:
 	}
 
 	res.iv = output
-	//p("Intersect returning %#v", res)
+	//p("intersect returning %#v", res)
 	return res
 }
 
-// Get returns true iff key is in the container.
-func (rc *runContainer32) Get(key uint32) bool {
-	_, in, _ := rc.Search(key, nil)
+// get returns true iff key is in the container.
+func (rc *runContainer32) get(key uint32) bool {
+	_, in, _ := rc.search(key, nil)
 	return in
 }
 
-// NumIntervals returns the count of intervals in the container.
-func (rc *runContainer32) NumIntervals() int {
+// numIntervals returns the count of intervals in the container.
+func (rc *runContainer32) numIntervals() int {
 	return len(rc.iv)
 }
 
-// Search returns alreadyPresent to indicate if the
+// search returns alreadyPresent to indicate if the
 // key is already in one of our interval32s.
 //
 // If key is alreadyPresent, then whichInterval32 tells
@@ -636,12 +636,12 @@ func (rc *runContainer32) NumIntervals() int {
 //     (Note that whichInterval32+1 won't exist when
 //     whichInterval32 is the last interval.)
 //
-// runContainer32.Search always returns whichInterval32 < len(rc.iv).
+// runContainer32.search always returns whichInterval32 < len(rc.iv).
 //
 // If not nil, opts can be used to further restrict
 // the search space.
 //
-func (rc *runContainer32) Search(key uint32, opts *SearchOptions) (whichInterval32 int, alreadyPresent bool, numCompares int) {
+func (rc *runContainer32) search(key uint32, opts *searchOptions) (whichInterval32 int, alreadyPresent bool, numCompares int) {
 
 	n := len(rc.iv)
 	if n == 0 {
@@ -722,14 +722,14 @@ func (rc *runContainer32) Search(key uint32, opts *SearchOptions) (whichInterval
 	}
 
 	// INVAR: key >= rc.iv[below-1].endx && key < rc.iv[below].start
-	//p("Search, INVAR: key >= rc.iv[below-1].endx && key < rc.iv[below].start, where key=%v, below=%v, below-1=%v, rc.iv[below-1]=%v, rc.iv[below]=%v", key, below, below-1, rc.iv[below-1], rc.iv[below])
+	//p("search, INVAR: key >= rc.iv[below-1].endx && key < rc.iv[below].start, where key=%v, below=%v, below-1=%v, rc.iv[below-1]=%v, rc.iv[below]=%v", key, below, below-1, rc.iv[below-1], rc.iv[below])
 	// leave alreadyPresent = false
 	return
 }
 
-// Cardinality returns the count of the integers stored in the
+// cardinality returns the count of the integers stored in the
 // runContainer32.
-func (rc *runContainer32) Cardinality() int {
+func (rc *runContainer32) cardinality() int {
 	if len(rc.iv) == 0 {
 		rc.card = 0
 		return 0
@@ -748,7 +748,7 @@ func (rc *runContainer32) Cardinality() int {
 
 // AsSlice decompresses the contents into a []uint32 slice.
 func (rc *runContainer32) AsSlice() []uint32 {
-	s := make([]uint32, rc.Cardinality())
+	s := make([]uint32, rc.cardinality())
 	j := 0
 	for _, p := range rc.iv {
 		for i := p.start; i < p.endx; i++ {
@@ -798,7 +798,7 @@ func runContainer32SerializedSizeInBytes(numRuns int) int {
 // serializedSizeInBytes returns the number of bytes of memory
 // required by this runContainer32.
 func (rc *runContainer32) serializedSizeInBytes() int {
-	return baseRc32Size + perIntervalRc32Size*rc.Cardinality()
+	return baseRc32Size + perIntervalRc32Size*rc.cardinality()
 }
 
 // Add adds a single value k to the set.
@@ -808,7 +808,7 @@ func (rc *runContainer32) Add(k uint32) {
 	// toBitmapOrArrayContainer(getCardinality()).add(k)
 	// but note that some unit tests use this method to build up test
 	// runcontainers without calling runOptimize
-	index, present, _ := rc.Search(k, nil)
+	index, present, _ := rc.search(k, nil)
 	if present {
 		return // already there
 	}
@@ -903,7 +903,7 @@ func (ri *RunIterator32) HasNext() bool {
 	if ri.curIndex == -1 {
 		return true
 	}
-	return ri.curSeq+1 < ri.rc.Cardinality()
+	return ri.curSeq+1 < ri.rc.cardinality()
 }
 
 // Cur returns the current value pointed to by the iterator.
@@ -942,7 +942,7 @@ func (ri *RunIterator32) Next() uint32 {
 // Cur if you want to double check what is about
 // to be deleted.
 func (ri *RunIterator32) Remove() uint32 {
-	n := ri.rc.Cardinality()
+	n := ri.rc.cardinality()
 	if n == 0 {
 		panic("RunIterator.Remove called on empty runContainer32")
 	}
@@ -952,10 +952,10 @@ func (ri *RunIterator32) Remove() uint32 {
 	return cur
 }
 
-// Remove removes key from the container.
-func (rc *runContainer32) Remove(key uint32) (wasPresent bool) {
+// remove removes key from the container.
+func (rc *runContainer32) remove(key uint32) (wasPresent bool) {
 	var index, curSeq int
-	index, wasPresent, _ = rc.Search(key, nil)
+	index, wasPresent, _ = rc.search(key, nil)
 	if !wasPresent {
 		return // already removed, nothing to do.
 	}
@@ -1058,8 +1058,8 @@ func (rc *runContainer32) findNextIntervalThatIntersectsStartingFrom(startIndex 
 	rc.myOpts.StartIndex = startIndex
 	rc.myOpts.EndxIndex = 0
 
-	w, _, _ := rc.Search(key, &rc.myOpts)
-	// rc.Search always returns w < len(rc.iv)
+	w, _, _ := rc.search(key, &rc.myOpts)
+	// rc.search always returns w < len(rc.iv)
 	if w < startIndex {
 		// not found and comes before lower bound startIndex,
 		// so just use the lower bound.

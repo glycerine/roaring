@@ -74,13 +74,13 @@ func TestRleRunIterator(t *testing.T) {
 			msg := rc.String()
 			_ = msg
 			p("an empty container: '%s'\n", msg)
-			So(rc.Cardinality(), ShouldEqual, 0)
+			So(rc.cardinality(), ShouldEqual, 0)
 			it := rc.NewRunIterator32()
 			So(it.HasNext(), ShouldBeFalse)
 		}
 		{
 			rc := newRunContainer32TakeOwnership([]interval32{{start: 4, endx: 5}})
-			So(rc.Cardinality(), ShouldEqual, 1)
+			So(rc.cardinality(), ShouldEqual, 1)
 			it := rc.NewRunIterator32()
 			So(it.HasNext(), ShouldBeTrue)
 			So(it.Next(), ShouldResemble, uint32(4))
@@ -88,7 +88,7 @@ func TestRleRunIterator(t *testing.T) {
 		}
 		{
 			rc := newRunContainer32CopyIv([]interval32{{start: 4, endx: 10}})
-			So(rc.Cardinality(), ShouldEqual, 6)
+			So(rc.cardinality(), ShouldEqual, 6)
 			it := rc.NewRunIterator32()
 			So(it.HasNext(), ShouldBeTrue)
 			for i := 4; i < 10; i++ {
@@ -99,7 +99,7 @@ func TestRleRunIterator(t *testing.T) {
 
 		{
 			rc := newRunContainer32TakeOwnership([]interval32{{start: 4, endx: 10}})
-			So(rc.Cardinality(), ShouldEqual, 6)
+			So(rc.cardinality(), ShouldEqual, 6)
 			So(rc.serializedSizeInBytes(), ShouldEqual, 96)
 
 			it := rc.NewRunIterator32()
@@ -114,10 +114,10 @@ func TestRleRunIterator(t *testing.T) {
 			So(it.Remove(), ShouldEqual, uint32(5))
 
 			p("after Remove of 5, rc = '%s'", rc)
-			So(rc.Cardinality(), ShouldEqual, 5)
+			So(rc.cardinality(), ShouldEqual, 5)
 
 			it2 := rc.NewRunIterator32()
-			So(rc.Cardinality(), ShouldEqual, 5)
+			So(rc.cardinality(), ShouldEqual, 5)
 			So(it2.Next(), ShouldEqual, uint32(4))
 			for i := 6; i < 10; i++ {
 				So(it2.Next(), ShouldEqual, uint32(i))
@@ -135,9 +135,9 @@ func TestRleRunIterator(t *testing.T) {
 				{start: UpperLimit32 - 1, endx: UpperLimit32},
 			})
 
-			rc = rc.Union(rc1)
+			rc = rc.union(rc1)
 
-			So(rc.Cardinality(), ShouldEqual, 8)
+			So(rc.cardinality(), ShouldEqual, 8)
 			it := rc.NewRunIterator32()
 			So(it.Next(), ShouldEqual, uint32(0))
 			So(it.Next(), ShouldEqual, uint32(2))
@@ -153,16 +153,16 @@ func TestRleRunIterator(t *testing.T) {
 				{start: 0, endx: UpperLimit32},
 			})
 
-			p("Union with a full [0,2^32-1) container should yield that same single interval run container")
-			rc2 = rc2.Union(rc)
-			So(rc2.NumIntervals(), ShouldEqual, 1)
+			p("union with a full [0,2^32-1) container should yield that same single interval run container")
+			rc2 = rc2.union(rc)
+			So(rc2.numIntervals(), ShouldEqual, 1)
 		}
 	})
 }
 
 func TestRleRunSearch(t *testing.T) {
 
-	Convey("RunContainer.Search should respect the prior bounds we provide for efficiency of searching through a subset of the intervals", t, func() {
+	Convey("RunContainer.search should respect the prior bounds we provide for efficiency of searching through a subset of the intervals", t, func() {
 		{
 			vals := []uint32{0, 2, 4, 6, 8, 10, 12, 14, 16, 18, UpperLimit32 - 3, UpperLimit32 - 1}
 			expWhere := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}
@@ -170,20 +170,20 @@ func TestRleRunSearch(t *testing.T) {
 
 			rc := newRunContainer32FromVals(true, vals...)
 
-			So(rc.Cardinality(), ShouldEqual, 12)
+			So(rc.cardinality(), ShouldEqual, 12)
 
 			var where int
 			var present bool
 
 			for i, v := range vals {
-				where, present, _ = rc.Search(v, nil)
+				where, present, _ = rc.search(v, nil)
 				So(present, ShouldBeTrue)
 				So(where, ShouldEqual, expWhere[i])
 			}
 
 			for i, v := range absent {
 				p("absent check on i=%v, v=%v in rc=%v", i, v, rc)
-				where, present, _ = rc.Search(v, nil)
+				where, present, _ = rc.search(v, nil)
 				So(present, ShouldBeFalse)
 				So(where, ShouldEqual, i)
 			}
@@ -193,44 +193,44 @@ func TestRleRunSearch(t *testing.T) {
 
 			p("before removing UpperLimit32-1: %v", rc)
 
-			So(rc.Cardinality(), ShouldEqual, 12)
-			So(rc.NumIntervals(), ShouldEqual, 12)
+			So(rc.cardinality(), ShouldEqual, 12)
+			So(rc.numIntervals(), ShouldEqual, 12)
 
-			rc.Remove(UpperLimit32 - 1)
+			rc.remove(UpperLimit32 - 1)
 			p("after removing UpperLimit32-1: %v", rc)
-			So(rc.Cardinality(), ShouldEqual, 11)
-			So(rc.NumIntervals(), ShouldEqual, 11)
+			So(rc.cardinality(), ShouldEqual, 11)
+			So(rc.numIntervals(), ShouldEqual, 11)
 
-			p("Search for absent UpperLimit32-1 should return the interval before our key")
-			where, present, _ = rc.Search(UpperLimit32-1, nil)
+			p("search for absent UpperLimit32-1 should return the interval before our key")
+			where, present, _ = rc.search(UpperLimit32-1, nil)
 			So(present, ShouldBeFalse)
 			So(where, ShouldEqual, 10)
 
 			var numCompares int
-			where, present, numCompares = rc.Search(UpperLimit32, nil)
+			where, present, numCompares = rc.search(UpperLimit32, nil)
 			So(present, ShouldBeFalse)
 			So(where, ShouldEqual, 10)
 			p("numCompares = %v", numCompares)
 			So(numCompares, ShouldEqual, 3)
 
-			p("confirm that opts SearchOptions to Search reduces search time")
-			opts := &SearchOptions{
+			p("confirm that opts searchOptions to search reduces search time")
+			opts := &searchOptions{
 				StartIndex: 5,
 			}
-			where, present, numCompares = rc.Search(UpperLimit32, opts)
+			where, present, numCompares = rc.search(UpperLimit32, opts)
 			So(present, ShouldBeFalse)
 			So(where, ShouldEqual, 10)
 			p("numCompares = %v", numCompares)
 			So(numCompares, ShouldEqual, 2)
 
-			p("confirm that opts SearchOptions to Search is respected")
-			where, present, _ = rc.Search(UpperLimit32-3, opts)
+			p("confirm that opts searchOptions to search is respected")
+			where, present, _ = rc.search(UpperLimit32-3, opts)
 			So(present, ShouldBeTrue)
 			So(where, ShouldEqual, 10)
 
 			// with the bound in place, UpperLimit32-3 should not be found
 			opts.EndxIndex = 10
-			where, present, _ = rc.Search(UpperLimit32-3, opts)
+			where, present, _ = rc.search(UpperLimit32-3, opts)
 			So(present, ShouldBeFalse)
 			So(where, ShouldEqual, 9)
 
@@ -241,7 +241,7 @@ func TestRleRunSearch(t *testing.T) {
 
 func TestRleIntersection(t *testing.T) {
 
-	Convey("RunContainer.Intersect of two RunContainers should return their intersection", t, func() {
+	Convey("RunContainer.intersect of two RunContainers should return their intersection", t, func() {
 		{
 			vals := []uint32{0, 2, 4, 6, 8, 10, 12, 14, 16, 18, UpperLimit32 - 3, UpperLimit32 - 1}
 
@@ -254,23 +254,23 @@ func TestRleIntersection(t *testing.T) {
 			So(haveOverlap32(interval32{0, 3}, interval32{2, 3}), ShouldBeTrue)
 			So(haveOverlap32(interval32{0, 3}, interval32{3, 4}), ShouldBeFalse)
 
-			isect := a.Intersect(b)
+			isect := a.intersect(b)
 
 			p("isect is %v", isect)
 
-			So(isect.Cardinality(), ShouldEqual, 3)
-			So(isect.Get(4), ShouldBeTrue)
-			So(isect.Get(6), ShouldBeTrue)
-			So(isect.Get(8), ShouldBeTrue)
+			So(isect.cardinality(), ShouldEqual, 3)
+			So(isect.get(4), ShouldBeTrue)
+			So(isect.get(6), ShouldBeTrue)
+			So(isect.get(8), ShouldBeTrue)
 
 			d := newRunContainer32TakeOwnership([]interval32{{start: 0, endx: UpperLimit32}})
 
-			isect = isect.Intersect(d)
+			isect = isect.intersect(d)
 			p("isect is %v", isect)
-			So(isect.Cardinality(), ShouldEqual, 3)
-			So(isect.Get(4), ShouldBeTrue)
-			So(isect.Get(6), ShouldBeTrue)
-			So(isect.Get(8), ShouldBeTrue)
+			So(isect.cardinality(), ShouldEqual, 3)
+			So(isect.get(4), ShouldBeTrue)
+			So(isect.get(6), ShouldBeTrue)
+			So(isect.get(8), ShouldBeTrue)
 
 			p("test breaking apart intervals")
 			e := newRunContainer32TakeOwnership([]interval32{{2, 5}, {8, 10}, {14, 17}, {20, 23}})
@@ -280,32 +280,32 @@ func TestRleIntersection(t *testing.T) {
 			p("f = %v", f)
 
 			{
-				isect = e.Intersect(f)
+				isect = e.intersect(f)
 				p("isect of e and f is %v", isect)
-				So(isect.Cardinality(), ShouldEqual, 8)
-				So(isect.Get(3), ShouldBeTrue)
-				So(isect.Get(4), ShouldBeTrue)
-				So(isect.Get(8), ShouldBeTrue)
-				So(isect.Get(9), ShouldBeTrue)
-				So(isect.Get(14), ShouldBeTrue)
-				So(isect.Get(15), ShouldBeTrue)
-				So(isect.Get(16), ShouldBeTrue)
-				So(isect.Get(22), ShouldBeTrue)
+				So(isect.cardinality(), ShouldEqual, 8)
+				So(isect.get(3), ShouldBeTrue)
+				So(isect.get(4), ShouldBeTrue)
+				So(isect.get(8), ShouldBeTrue)
+				So(isect.get(9), ShouldBeTrue)
+				So(isect.get(14), ShouldBeTrue)
+				So(isect.get(15), ShouldBeTrue)
+				So(isect.get(16), ShouldBeTrue)
+				So(isect.get(22), ShouldBeTrue)
 			}
 
 			{
 				// check for symmetry
-				isect = f.Intersect(e)
+				isect = f.intersect(e)
 				p("isect of f and e is %v", isect)
-				So(isect.Cardinality(), ShouldEqual, 8)
-				So(isect.Get(3), ShouldBeTrue)
-				So(isect.Get(4), ShouldBeTrue)
-				So(isect.Get(8), ShouldBeTrue)
-				So(isect.Get(9), ShouldBeTrue)
-				So(isect.Get(14), ShouldBeTrue)
-				So(isect.Get(15), ShouldBeTrue)
-				So(isect.Get(16), ShouldBeTrue)
-				So(isect.Get(22), ShouldBeTrue)
+				So(isect.cardinality(), ShouldEqual, 8)
+				So(isect.get(3), ShouldBeTrue)
+				So(isect.get(4), ShouldBeTrue)
+				So(isect.get(8), ShouldBeTrue)
+				So(isect.get(9), ShouldBeTrue)
+				So(isect.get(14), ShouldBeTrue)
+				So(isect.get(15), ShouldBeTrue)
+				So(isect.get(16), ShouldBeTrue)
+				So(isect.get(22), ShouldBeTrue)
 			}
 
 		}
@@ -317,13 +317,13 @@ type trial struct {
 	percentFill float64
 	ntrial      int
 
-	// only in the Union test
+	// only in the union test
 	percentDelete float64
 }
 
 func TestRleRandomIntersection(t *testing.T) {
 
-	Convey("RunContainer.Intersect of two RunContainers should return their intersection, and this should hold over randomized container content when compared to intersection done with hash maps", t, func() {
+	Convey("RunContainer.intersect of two RunContainers should return their intersection, and this should hold over randomized container content when compared to intersection done with hash maps", t, func() {
 
 		seed := int64(42)
 		p("seed is %v", seed)
@@ -391,13 +391,13 @@ func TestRleRandomIntersection(t *testing.T) {
 				arr := newArrayContainerRange(int(first), int(second))
 				arle := newRunContainer32FromArray(arr)
 				p("after newRunContainer32FromArray(arr), arle is %v", arle)
-				arle.Set(false, a...)
-				p("after Set(false, a), arle is %v", arle)
+				arle.set(false, a...)
+				p("after set(false, a), arle is %v", arle)
 
 				p("arle is %v", arle)
 				p("brle is %v", brle)
 
-				isect := arle.Intersect(brle)
+				isect := arle.intersect(brle)
 
 				p("isect is %v", isect)
 
@@ -405,13 +405,13 @@ func TestRleRandomIntersection(t *testing.T) {
 
 				for k := range hashi {
 					p("hashi has %v, checking in isect", k)
-					So(isect.Get(uint32(k)), ShouldBeTrue)
+					So(isect.get(uint32(k)), ShouldBeTrue)
 				}
 
-				p("checking for cardinality agreement: isect is %v, len(hashi) is %v", isect.Cardinality(), len(hashi))
-				So(isect.Cardinality(), ShouldEqual, len(hashi))
+				p("checking for cardinality agreement: isect is %v, len(hashi) is %v", isect.cardinality(), len(hashi))
+				So(isect.cardinality(), ShouldEqual, len(hashi))
 			}
-			p("done with randomized Intersect() checks for trial %#v", tr)
+			p("done with randomized intersect() checks for trial %#v", tr)
 		}
 
 		for i := range trials {
@@ -423,7 +423,7 @@ func TestRleRandomIntersection(t *testing.T) {
 
 func TestRleRandomUnion(t *testing.T) {
 
-	Convey("RunContainer.Union of two RunContainers should return their union, and this should hold over randomized container content when compared to union done with hash maps", t, func() {
+	Convey("RunContainer.union of two RunContainers should return their union, and this should hold over randomized container content when compared to union done with hash maps", t, func() {
 
 		seed := int64(42)
 		p("seed is %v", seed)
@@ -475,46 +475,46 @@ func TestRleRandomUnion(t *testing.T) {
 					arle.Add(a[i])
 				}
 				brle := newRunContainer32()
-				brle.Set(false, b...)
+				brle.set(false, b...)
 
 				p("arle is %v", arle)
 				p("brle is %v", brle)
 
-				union := arle.Union(brle)
+				union := arle.union(brle)
 
 				p("union is %v", union)
 
-				p("union.Cardinality(): %v, versus len(hashu): %v", union.Cardinality(), len(hashu))
+				p("union.cardinality(): %v, versus len(hashu): %v", union.cardinality(), len(hashu))
 
 				un := union.AsSlice()
 				sort.Sort(uint32Slice(un))
 
 				for kk, v := range un {
-					p("kk:%v, RunContainer.Union has %v, checking hashmap: %v", kk, v, hashu[int(v)])
+					p("kk:%v, RunContainer.union has %v, checking hashmap: %v", kk, v, hashu[int(v)])
 					_ = kk
 					So(hashu[int(v)], ShouldBeTrue)
 				}
 
 				for k := range hashu {
 					p("hashu has %v, checking in union", k)
-					So(union.Get(uint32(k)), ShouldBeTrue)
+					So(union.get(uint32(k)), ShouldBeTrue)
 				}
 
 				p("checking for cardinality agreement:")
-				So(union.Cardinality(), ShouldEqual, len(hashu))
+				So(union.cardinality(), ShouldEqual, len(hashu))
 
-				// do the deletes, exercising the Remove functionality
+				// do the deletes, exercising the remove functionality
 				for i := 0; i < numDel; i++ {
 					r1 := rand.Intn(len(a))
 					goner := a[r1]
-					union.Remove(goner)
+					union.remove(goner)
 					delete(hashu, int(goner))
 				}
 				// verify the same as in the hashu
-				So(union.Cardinality(), ShouldEqual, len(hashu))
+				So(union.cardinality(), ShouldEqual, len(hashu))
 				for k := range hashu {
 					p("hashu has %v, checking in union", k)
-					So(union.Get(uint32(k)), ShouldBeTrue)
+					So(union.get(uint32(k)), ShouldBeTrue)
 				}
 
 			}
@@ -556,16 +556,16 @@ func TestRleAndOrXor(t *testing.T) {
 			onceler := newArrayContainerCapacity(1)
 			onceler.content = append(onceler.content, uint16(0))
 			oneZero := newRunContainer32FromArray(onceler)
-			So(empty.Cardinality(), ShouldEqual, 0)
-			So(oneZero.Cardinality(), ShouldEqual, 1)
+			So(empty.cardinality(), ShouldEqual, 0)
+			So(oneZero.cardinality(), ShouldEqual, 1)
 			So(empty.And(b0).GetCardinality(), ShouldEqual, 0)
 			So(empty.Or(b0).GetCardinality(), ShouldEqual, 3)
 
 			// exercise newRunContainer32FromVals() with 0 and 1 inputs.
 			empty2 := newRunContainer32FromVals(false, []uint32{}...)
-			So(empty2.Cardinality(), ShouldEqual, 0)
+			So(empty2.cardinality(), ShouldEqual, 0)
 			one2 := newRunContainer32FromVals(false, []uint32{1}...)
-			So(one2.Cardinality(), ShouldEqual, 1)
+			So(one2.cardinality(), ShouldEqual, 1)
 		}
 	})
 }
@@ -612,35 +612,35 @@ func TestRleCoverageOddsAndEnds(t *testing.T) {
 		So(isEmpty, ShouldBeFalse)
 		So(isect.runlen(), ShouldEqual, 1)
 
-		// runContainer32.Union
+		// runContainer32.union
 		{
 			ra := newRunContainer32FromVals(false, 4, 5)
 			rb := newRunContainer32FromVals(false, 4, 6, 8, 9, 10)
-			ra.Union(rb)
+			ra.union(rb)
 			So(rb.indexOfIntervalAtOrAfter(4, 2), ShouldEqual, 2)
 			So(rb.indexOfIntervalAtOrAfter(3, 2), ShouldEqual, 2)
 		}
 
-		// runContainer.Intersect
+		// runContainer.intersect
 		{
 			ra := newRunContainer32()
 			rb := newRunContainer32()
-			So(ra.Intersect(rb).Cardinality(), ShouldEqual, 0)
+			So(ra.intersect(rb).cardinality(), ShouldEqual, 0)
 		}
 		{
 			ra := newRunContainer32FromVals(false, 1)
 			rb := newRunContainer32FromVals(false, 4)
-			So(ra.Intersect(rb).Cardinality(), ShouldEqual, 0)
+			So(ra.intersect(rb).cardinality(), ShouldEqual, 0)
 		}
 
 		// runContainer.Add
 		{
 			ra := newRunContainer32FromVals(false, 1)
 			rb := newRunContainer32FromVals(false, 4)
-			So(ra.Cardinality(), ShouldEqual, 1)
-			So(rb.Cardinality(), ShouldEqual, 1)
+			So(ra.cardinality(), ShouldEqual, 1)
+			So(rb.cardinality(), ShouldEqual, 1)
 			ra.Add(5)
-			So(ra.Cardinality(), ShouldEqual, 2)
+			So(ra.cardinality(), ShouldEqual, 2)
 
 			// NewRunIterator32()
 			empty := newRunContainer32()
@@ -658,7 +658,7 @@ func TestRleCoverageOddsAndEnds(t *testing.T) {
 			arr := newArrayContainerRange(1, 6)
 			arr.content = []uint16{5, 5, 5, 6, 9}
 			rc3 := newRunContainer32FromArray(arr)
-			So(rc3.Cardinality(), ShouldEqual, 3)
+			So(rc3.cardinality(), ShouldEqual, 3)
 
 			// runContainer32SerializedSizeInBytes
 			// runContainer32.SerializedSizeInBytes
@@ -669,15 +669,15 @@ func TestRleCoverageOddsAndEnds(t *testing.T) {
 			idx, _ := rc3.findNextIntervalThatIntersectsStartingFrom(0, 100)
 			So(idx, ShouldEqual, 1)
 
-			// deleteAt / Remove
+			// deleteAt / remove
 			rc3.Add(10)
-			rc3.Remove(10)
-			rc3.Remove(9)
-			So(rc3.Cardinality(), ShouldEqual, 2)
+			rc3.remove(10)
+			rc3.remove(9)
+			So(rc3.cardinality(), ShouldEqual, 2)
 			rc3.Add(9)
 			rc3.Add(10)
 			rc3.Add(12)
-			So(rc3.Cardinality(), ShouldEqual, 5)
+			So(rc3.cardinality(), ShouldEqual, 5)
 			it3 := rc3.NewRunIterator32()
 			it3.Next()
 			it3.Next()

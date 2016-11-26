@@ -42,10 +42,10 @@ const MaxUint16 = 65535
 // interval endpoint endx, this is MaxUint16 - 1.
 const UpperLimit16 = MaxUint16 - 1
 
-// SearchOptions allows us to accelerate RunContainer16.Search with
+// searchOptions allows us to accelerate runContainer32.search with
 // prior knowledge of (mostly lower) bounds. This is used by Union
 // and Intersect.
-type SearchOptions struct {
+type searchOptions struct {
 
 	// start here instead of at 0
 	StartIndex int
@@ -53,7 +53,7 @@ type SearchOptions struct {
 	// upper bound instead of len(rc.iv);
 	// EndxIndex == 0 means ignore the bound and use
 	// EndxIndex == n ==len(rc.iv) which is also
-	// naturally the default for Search()
+	// naturally the default for search()
 	// when opt = nil.
 	EndxIndex int
 }
