@@ -14,163 +14,163 @@ func init() {
 	rleVerbose = testing.Verbose()
 }
 
-func TestRleInterval32s(t *testing.T) {
+func TestRleInterval16s(t *testing.T) {
 
-	Convey("canMerge, and mergeInterval32s should do what they say", t, func() {
-		a := interval32{start: 0, endx: 10}
+	Convey("canMerge, and mergeInterval16s should do what they say", t, func() {
+		a := interval16{start: 0, endx: 10}
 		msg := a.String()
 		p("a is %v", msg)
-		b := interval32{start: 0, endx: 2}
-		report := sliceToString32([]interval32{a, b})
+		b := interval16{start: 0, endx: 2}
+		report := sliceToString16([]interval16{a, b})
 		_ = report
 		p("a and b together are: %s", report)
-		c := interval32{start: 2, endx: 5}
-		d := interval32{start: 2, endx: 6}
-		e := interval32{start: 0, endx: 5}
-		f := interval32{start: 9, endx: 10}
-		g := interval32{start: 8, endx: 10}
-		h := interval32{start: 5, endx: 7}
-		i := interval32{start: 6, endx: 7}
+		c := interval16{start: 2, endx: 5}
+		d := interval16{start: 2, endx: 6}
+		e := interval16{start: 0, endx: 5}
+		f := interval16{start: 9, endx: 10}
+		g := interval16{start: 8, endx: 10}
+		h := interval16{start: 5, endx: 7}
+		i := interval16{start: 6, endx: 7}
 
-		aIb, empty := intersectInterval32s(a, b)
+		aIb, empty := intersectInterval16s(a, b)
 		So(empty, ShouldBeFalse)
 		So(aIb, ShouldResemble, b)
 
-		So(canMerge32(b, c), ShouldBeTrue)
-		So(canMerge32(c, b), ShouldBeTrue)
-		So(canMerge32(a, h), ShouldBeTrue)
+		So(canMerge16(b, c), ShouldBeTrue)
+		So(canMerge16(c, b), ShouldBeTrue)
+		So(canMerge16(a, h), ShouldBeTrue)
 
-		So(canMerge32(d, e), ShouldBeTrue)
-		So(canMerge32(f, g), ShouldBeTrue)
-		So(canMerge32(c, h), ShouldBeTrue)
+		So(canMerge16(d, e), ShouldBeTrue)
+		So(canMerge16(f, g), ShouldBeTrue)
+		So(canMerge16(c, h), ShouldBeTrue)
 
-		So(canMerge32(b, h), ShouldBeFalse)
-		So(canMerge32(h, b), ShouldBeFalse)
-		So(canMerge32(c, i), ShouldBeFalse)
+		So(canMerge16(b, h), ShouldBeFalse)
+		So(canMerge16(h, b), ShouldBeFalse)
+		So(canMerge16(c, i), ShouldBeFalse)
 
-		So(mergeInterval32s(b, c), ShouldResemble, e)
-		So(mergeInterval32s(c, b), ShouldResemble, e)
+		So(mergeInterval16s(b, c), ShouldResemble, e)
+		So(mergeInterval16s(c, b), ShouldResemble, e)
 
-		So(mergeInterval32s(h, i), ShouldResemble, h)
-		So(mergeInterval32s(i, h), ShouldResemble, h)
+		So(mergeInterval16s(h, i), ShouldResemble, h)
+		So(mergeInterval16s(i, h), ShouldResemble, h)
 
-		So(mergeInterval32s(interval32{start: 0, endx: 1}, interval32{start: 1, endx: 2}), ShouldResemble, interval32{start: 0, endx: 2})
-		So(mergeInterval32s(interval32{start: 1, endx: 2}, interval32{start: 0, endx: 1}), ShouldResemble, interval32{start: 0, endx: 2})
-		So(mergeInterval32s(interval32{start: 0, endx: 4}, interval32{start: 3, endx: 5}), ShouldResemble, interval32{start: 0, endx: 5})
-		So(mergeInterval32s(interval32{start: 0, endx: 4}, interval32{start: 3, endx: 4}), ShouldResemble, interval32{start: 0, endx: 4})
+		So(mergeInterval16s(interval16{start: 0, endx: 1}, interval16{start: 1, endx: 2}), ShouldResemble, interval16{start: 0, endx: 2})
+		So(mergeInterval16s(interval16{start: 1, endx: 2}, interval16{start: 0, endx: 1}), ShouldResemble, interval16{start: 0, endx: 2})
+		So(mergeInterval16s(interval16{start: 0, endx: 4}, interval16{start: 3, endx: 5}), ShouldResemble, interval16{start: 0, endx: 5})
+		So(mergeInterval16s(interval16{start: 0, endx: 4}, interval16{start: 3, endx: 4}), ShouldResemble, interval16{start: 0, endx: 4})
 
-		So(mergeInterval32s(interval32{start: 0, endx: 8}, interval32{start: 1, endx: 7}), ShouldResemble, interval32{start: 0, endx: 8})
-		So(mergeInterval32s(interval32{start: 1, endx: 7}, interval32{start: 0, endx: 8}), ShouldResemble, interval32{start: 0, endx: 8})
+		So(mergeInterval16s(interval16{start: 0, endx: 8}, interval16{start: 1, endx: 7}), ShouldResemble, interval16{start: 0, endx: 8})
+		So(mergeInterval16s(interval16{start: 1, endx: 7}, interval16{start: 0, endx: 8}), ShouldResemble, interval16{start: 0, endx: 8})
 
-		So(func() { _ = mergeInterval32s(interval32{start: 0, endx: 1}, interval32{start: 2, endx: 3}) }, ShouldPanic)
+		So(func() { _ = mergeInterval16s(interval16{start: 0, endx: 1}, interval16{start: 2, endx: 3}) }, ShouldPanic)
 
 	})
 }
 
-func TestRleRunIterator32(t *testing.T) {
+func TestRleRunIterator16(t *testing.T) {
 
-	Convey("RunIterator32 unit tests for Cur, Next, HasNext, and Remove should pass", t, func() {
+	Convey("RunIterator16 unit tests for Cur, Next, HasNext, and Remove should pass", t, func() {
 		{
-			rc := newRunContainer32()
+			rc := newRunContainer16()
 			msg := rc.String()
 			_ = msg
 			p("an empty container: '%s'\n", msg)
 			So(rc.cardinality(), ShouldEqual, 0)
-			it := rc.NewRunIterator32()
+			it := rc.NewRunIterator16()
 			So(it.HasNext(), ShouldBeFalse)
 		}
 		{
-			rc := newRunContainer32TakeOwnership([]interval32{{start: 4, endx: 5}})
+			rc := newRunContainer16TakeOwnership([]interval16{{start: 4, endx: 5}})
 			So(rc.cardinality(), ShouldEqual, 1)
-			it := rc.NewRunIterator32()
+			it := rc.NewRunIterator16()
 			So(it.HasNext(), ShouldBeTrue)
-			So(it.Next(), ShouldResemble, uint32(4))
-			So(it.Cur(), ShouldResemble, uint32(4))
+			So(it.Next(), ShouldResemble, uint16(4))
+			So(it.Cur(), ShouldResemble, uint16(4))
 		}
 		{
-			rc := newRunContainer32CopyIv([]interval32{{start: 4, endx: 10}})
+			rc := newRunContainer16CopyIv([]interval16{{start: 4, endx: 10}})
 			So(rc.cardinality(), ShouldEqual, 6)
-			it := rc.NewRunIterator32()
+			it := rc.NewRunIterator16()
 			So(it.HasNext(), ShouldBeTrue)
 			for i := 4; i < 10; i++ {
-				So(it.Next(), ShouldEqual, uint32(i))
+				So(it.Next(), ShouldEqual, uint16(i))
 			}
 			So(it.HasNext(), ShouldBeFalse)
 		}
 
 		{
-			rc := newRunContainer32TakeOwnership([]interval32{{start: 4, endx: 10}})
+			rc := newRunContainer16TakeOwnership([]interval16{{start: 4, endx: 10}})
 			card := rc.cardinality()
 			So(card, ShouldEqual, 6)
-			So(rc.serializedSizeInBytes(), ShouldEqual, int(unsafe.Sizeof(interval32{}))*card)
+			So(rc.serializedSizeInBytes(), ShouldEqual, int(unsafe.Sizeof(interval16{}))*card)
 
-			it := rc.NewRunIterator32()
+			it := rc.NewRunIterator16()
 			So(it.HasNext(), ShouldBeTrue)
 			for i := 4; i < 6; i++ {
-				So(it.Next(), ShouldEqual, uint32(i))
+				So(it.Next(), ShouldEqual, uint16(i))
 			}
-			So(it.Cur(), ShouldEqual, uint32(5))
+			So(it.Cur(), ShouldEqual, uint16(5))
 
 			p("before Remove of 5, rc = '%s'", rc)
 
-			So(it.Remove(), ShouldEqual, uint32(5))
+			So(it.Remove(), ShouldEqual, uint16(5))
 
 			p("after Remove of 5, rc = '%s'", rc)
 			So(rc.cardinality(), ShouldEqual, 5)
 
-			it2 := rc.NewRunIterator32()
+			it2 := rc.NewRunIterator16()
 			So(rc.cardinality(), ShouldEqual, 5)
-			So(it2.Next(), ShouldEqual, uint32(4))
+			So(it2.Next(), ShouldEqual, uint16(4))
 			for i := 6; i < 10; i++ {
-				So(it2.Next(), ShouldEqual, uint32(i))
+				So(it2.Next(), ShouldEqual, uint16(i))
 			}
 		}
 		{
-			rc := newRunContainer32TakeOwnership([]interval32{
+			rc := newRunContainer16TakeOwnership([]interval16{
 				{start: 0, endx: 1},
 				{start: 2, endx: 3},
 				{start: 4, endx: 5},
 			})
-			rc1 := newRunContainer32TakeOwnership([]interval32{
+			rc1 := newRunContainer16TakeOwnership([]interval16{
 				{start: 6, endx: 8},
 				{start: 10, endx: 12},
-				{start: UpperLimit32 - 1, endx: UpperLimit32},
+				{start: UpperLimit16 - 1, endx: UpperLimit16},
 			})
 
 			rc = rc.union(rc1)
 
 			So(rc.cardinality(), ShouldEqual, 8)
-			it := rc.NewRunIterator32()
-			So(it.Next(), ShouldEqual, uint32(0))
-			So(it.Next(), ShouldEqual, uint32(2))
-			So(it.Next(), ShouldEqual, uint32(4))
-			So(it.Next(), ShouldEqual, uint32(6))
-			So(it.Next(), ShouldEqual, uint32(7))
-			So(it.Next(), ShouldEqual, uint32(10))
-			So(it.Next(), ShouldEqual, uint32(11))
-			So(it.Next(), ShouldEqual, uint32(UpperLimit32-1))
+			it := rc.NewRunIterator16()
+			So(it.Next(), ShouldEqual, uint16(0))
+			So(it.Next(), ShouldEqual, uint16(2))
+			So(it.Next(), ShouldEqual, uint16(4))
+			So(it.Next(), ShouldEqual, uint16(6))
+			So(it.Next(), ShouldEqual, uint16(7))
+			So(it.Next(), ShouldEqual, uint16(10))
+			So(it.Next(), ShouldEqual, uint16(11))
+			So(it.Next(), ShouldEqual, uint16(UpperLimit16-1))
 			So(it.HasNext(), ShouldEqual, false)
 
-			rc2 := newRunContainer32TakeOwnership([]interval32{
-				{start: 0, endx: UpperLimit32},
+			rc2 := newRunContainer16TakeOwnership([]interval16{
+				{start: 0, endx: UpperLimit16},
 			})
 
-			p("union with a full [0,2^32-1) container should yield that same single interval run container")
+			p("union with a full [0,2^16-1) container should yield that same single interval run container")
 			rc2 = rc2.union(rc)
 			So(rc2.numIntervals(), ShouldEqual, 1)
 		}
 	})
 }
 
-func TestRleRunSearch32(t *testing.T) {
+func TestRleRunSearch16(t *testing.T) {
 
-	Convey("RunContainer32.search should respect the prior bounds we provide for efficiency of searching through a subset of the intervals", t, func() {
+	Convey("RunContainer16.search should respect the prior bounds we provide for efficiency of searching through a subset of the intervals", t, func() {
 		{
-			vals := []uint32{0, 2, 4, 6, 8, 10, 12, 14, 16, 18, UpperLimit32 - 3, UpperLimit32 - 1}
+			vals := []uint16{0, 2, 4, 6, 8, 10, 12, 14, 16, 18, UpperLimit16 - 3, UpperLimit16 - 1}
 			expWhere := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}
-			absent := []uint32{1, 3, 5, 7, 9, 11, 13, 15, 17, 19, UpperLimit32 - 2}
+			absent := []uint16{1, 3, 5, 7, 9, 11, 13, 15, 17, 19, UpperLimit16 - 2}
 
-			rc := newRunContainer32FromVals(true, vals...)
+			rc := newRunContainer16FromVals(true, vals...)
 
 			So(rc.cardinality(), ShouldEqual, 12)
 
@@ -190,26 +190,26 @@ func TestRleRunSearch32(t *testing.T) {
 				So(where, ShouldEqual, i)
 			}
 
-			// delete the UpperLimit32 -1 so we can test
+			// delete the UpperLimit16 -1 so we can test
 			// the behavior when searching near upper limit.
 
-			p("before removing UpperLimit32-1: %v", rc)
+			p("before removing UpperLimit16-1: %v", rc)
 
 			So(rc.cardinality(), ShouldEqual, 12)
 			So(rc.numIntervals(), ShouldEqual, 12)
 
-			rc.remove(UpperLimit32 - 1)
-			p("after removing UpperLimit32-1: %v", rc)
+			rc.remove(UpperLimit16 - 1)
+			p("after removing UpperLimit16-1: %v", rc)
 			So(rc.cardinality(), ShouldEqual, 11)
 			So(rc.numIntervals(), ShouldEqual, 11)
 
-			p("search for absent UpperLimit32-1 should return the interval before our key")
-			where, present, _ = rc.search(UpperLimit32-1, nil)
+			p("search for absent UpperLimit16-1 should return the interval before our key")
+			where, present, _ = rc.search(UpperLimit16-1, nil)
 			So(present, ShouldBeFalse)
 			So(where, ShouldEqual, 10)
 
 			var numCompares int
-			where, present, numCompares = rc.search(UpperLimit32, nil)
+			where, present, numCompares = rc.search(UpperLimit16, nil)
 			So(present, ShouldBeFalse)
 			So(where, ShouldEqual, 10)
 			p("numCompares = %v", numCompares)
@@ -219,20 +219,20 @@ func TestRleRunSearch32(t *testing.T) {
 			opts := &searchOptions{
 				StartIndex: 5,
 			}
-			where, present, numCompares = rc.search(UpperLimit32, opts)
+			where, present, numCompares = rc.search(UpperLimit16, opts)
 			So(present, ShouldBeFalse)
 			So(where, ShouldEqual, 10)
 			p("numCompares = %v", numCompares)
 			So(numCompares, ShouldEqual, 2)
 
 			p("confirm that opts searchOptions to search is respected")
-			where, present, _ = rc.search(UpperLimit32-3, opts)
+			where, present, _ = rc.search(UpperLimit16-3, opts)
 			So(present, ShouldBeTrue)
 			So(where, ShouldEqual, 10)
 
-			// with the bound in place, UpperLimit32-3 should not be found
+			// with the bound in place, UpperLimit16-3 should not be found
 			opts.EndxIndex = 10
-			where, present, _ = rc.search(UpperLimit32-3, opts)
+			where, present, _ = rc.search(UpperLimit16-3, opts)
 			So(present, ShouldBeFalse)
 			So(where, ShouldEqual, 9)
 
@@ -241,20 +241,20 @@ func TestRleRunSearch32(t *testing.T) {
 
 }
 
-func TestRleIntersection32(t *testing.T) {
+func TestRleIntersection16(t *testing.T) {
 
-	Convey("RunContainer32.intersect of two RunContainer32(s) should return their intersection", t, func() {
+	Convey("RunContainer16.intersect of two RunContainer16(s) should return their intersection", t, func() {
 		{
-			vals := []uint32{0, 2, 4, 6, 8, 10, 12, 14, 16, 18, UpperLimit32 - 3, UpperLimit32 - 1}
+			vals := []uint16{0, 2, 4, 6, 8, 10, 12, 14, 16, 18, UpperLimit16 - 3, UpperLimit16 - 1}
 
-			a := newRunContainer32FromVals(true, vals[:5]...)
-			b := newRunContainer32FromVals(true, vals[2:]...)
+			a := newRunContainer16FromVals(true, vals[:5]...)
+			b := newRunContainer16FromVals(true, vals[2:]...)
 
 			p("a is %v", a)
 			p("b is %v", b)
 
-			So(haveOverlap32(interval32{0, 3}, interval32{2, 3}), ShouldBeTrue)
-			So(haveOverlap32(interval32{0, 3}, interval32{3, 4}), ShouldBeFalse)
+			So(haveOverlap16(interval16{0, 3}, interval16{2, 3}), ShouldBeTrue)
+			So(haveOverlap16(interval16{0, 3}, interval16{3, 4}), ShouldBeFalse)
 
 			isect := a.intersect(b)
 
@@ -265,7 +265,7 @@ func TestRleIntersection32(t *testing.T) {
 			So(isect.get(6), ShouldBeTrue)
 			So(isect.get(8), ShouldBeTrue)
 
-			d := newRunContainer32TakeOwnership([]interval32{{start: 0, endx: UpperLimit32}})
+			d := newRunContainer16TakeOwnership([]interval16{{start: 0, endx: UpperLimit16}})
 
 			isect = isect.intersect(d)
 			p("isect is %v", isect)
@@ -275,8 +275,8 @@ func TestRleIntersection32(t *testing.T) {
 			So(isect.get(8), ShouldBeTrue)
 
 			p("test breaking apart intervals")
-			e := newRunContainer32TakeOwnership([]interval32{{2, 5}, {8, 10}, {14, 17}, {20, 23}})
-			f := newRunContainer32TakeOwnership([]interval32{{3, 19}, {22, 24}})
+			e := newRunContainer16TakeOwnership([]interval16{{2, 5}, {8, 10}, {14, 17}, {20, 23}})
+			f := newRunContainer16TakeOwnership([]interval16{{3, 19}, {22, 24}})
 
 			p("e = %v", e)
 			p("f = %v", f)
@@ -314,7 +314,7 @@ func TestRleIntersection32(t *testing.T) {
 	})
 }
 
-func TestRleRandomIntersection32(t *testing.T) {
+func TestRleRandomIntersection16(t *testing.T) {
 
 	Convey("RunContainer.intersect of two RunContainers should return their intersection, and this should hold over randomized container content when compared to intersection done with hash maps", t, func() {
 
@@ -336,31 +336,31 @@ func TestRleRandomIntersection32(t *testing.T) {
 				mb := make(map[int]bool)
 
 				n := tr.n
-				a := []uint32{}
-				b := []uint32{}
+				a := []uint16{}
+				b := []uint16{}
 
 				var first, second int
 
 				draw := int(float64(n) * tr.percentFill)
 				for i := 0; i < draw; i++ {
 					r0 := rand.Intn(n)
-					a = append(a, uint32(r0))
+					a = append(a, uint16(r0))
 					ma[r0] = true
 					if i == 0 {
 						first = r0
 						second = r0 + 1
 						p("i is 0, so appending also to a the r0+1 == %v value", second)
-						a = append(a, uint32(second))
+						a = append(a, uint16(second))
 						ma[second] = true
 					}
 
 					r1 := rand.Intn(n)
-					b = append(b, uint32(r1))
+					b = append(b, uint16(r1))
 					mb[r1] = true
 				}
 
 				// print a; very likely it has dups
-				sort.Sort(uint32Slice(a))
+				sort.Sort(uint16Slice(a))
 				stringA := ""
 				for i := range a {
 					stringA += fmt.Sprintf("%v, ", a[i])
@@ -376,14 +376,14 @@ func TestRleRandomIntersection32(t *testing.T) {
 				}
 
 				// RunContainer's Intersect
-				brle := newRunContainer32FromVals(false, b...)
+				brle := newRunContainer16FromVals(false, b...)
 
-				//arle := newRunContainer32FromVals(false, a...)
+				//arle := newRunContainer16FromVals(false, a...)
 				// instead of the above line, create from array
 				// get better test coverage:
 				arr := newArrayContainerRange(int(first), int(second))
-				arle := newRunContainer32FromArray(arr)
-				p("after newRunContainer32FromArray(arr), arle is %v", arle)
+				arle := newRunContainer16FromArray(arr)
+				p("after newRunContainer16FromArray(arr), arle is %v", arle)
 				arle.set(false, a...)
 				p("after set(false, a), arle is %v", arle)
 
@@ -398,7 +398,7 @@ func TestRleRandomIntersection32(t *testing.T) {
 
 				for k := range hashi {
 					p("hashi has %v, checking in isect", k)
-					So(isect.get(uint32(k)), ShouldBeTrue)
+					So(isect.get(uint16(k)), ShouldBeTrue)
 				}
 
 				p("checking for cardinality agreement: isect is %v, len(hashi) is %v", isect.cardinality(), len(hashi))
@@ -414,7 +414,7 @@ func TestRleRandomIntersection32(t *testing.T) {
 	})
 }
 
-func TestRleRandomUnion32(t *testing.T) {
+func TestRleRandomUnion16(t *testing.T) {
 
 	Convey("RunContainer.union of two RunContainers should return their union, and this should hold over randomized container content when compared to union done with hash maps", t, func() {
 
@@ -436,18 +436,18 @@ func TestRleRandomUnion32(t *testing.T) {
 				mb := make(map[int]bool)
 
 				n := tr.n
-				a := []uint32{}
-				b := []uint32{}
+				a := []uint16{}
+				b := []uint16{}
 
 				draw := int(float64(n) * tr.percentFill)
 				numDel := int(float64(n) * tr.percentDelete)
 				for i := 0; i < draw; i++ {
 					r0 := rand.Intn(n)
-					a = append(a, uint32(r0))
+					a = append(a, uint16(r0))
 					ma[r0] = true
 
 					r1 := rand.Intn(n)
-					b = append(b, uint32(r1))
+					b = append(b, uint16(r1))
 					mb[r1] = true
 				}
 
@@ -463,11 +463,11 @@ func TestRleRandomUnion32(t *testing.T) {
 				//showHash("hashu", hashu)
 
 				// RunContainer's Union
-				arle := newRunContainer32()
+				arle := newRunContainer16()
 				for i := range a {
 					arle.Add(a[i])
 				}
-				brle := newRunContainer32()
+				brle := newRunContainer16()
 				brle.set(false, b...)
 
 				p("arle is %v", arle)
@@ -480,7 +480,7 @@ func TestRleRandomUnion32(t *testing.T) {
 				p("union.cardinality(): %v, versus len(hashu): %v", union.cardinality(), len(hashu))
 
 				un := union.AsSlice()
-				sort.Sort(uint32Slice(un))
+				sort.Sort(uint16Slice(un))
 
 				for kk, v := range un {
 					p("kk:%v, RunContainer.union has %v, checking hashmap: %v", kk, v, hashu[int(v)])
@@ -490,7 +490,7 @@ func TestRleRandomUnion32(t *testing.T) {
 
 				for k := range hashu {
 					p("hashu has %v, checking in union", k)
-					So(union.get(uint32(k)), ShouldBeTrue)
+					So(union.get(uint16(k)), ShouldBeTrue)
 				}
 
 				p("checking for cardinality agreement:")
@@ -507,7 +507,7 @@ func TestRleRandomUnion32(t *testing.T) {
 				So(union.cardinality(), ShouldEqual, len(hashu))
 				for k := range hashu {
 					p("hashu has %v, checking in union", k)
-					So(union.get(uint32(k)), ShouldBeTrue)
+					So(union.get(uint16(k)), ShouldBeTrue)
 				}
 
 			}
@@ -521,11 +521,11 @@ func TestRleRandomUnion32(t *testing.T) {
 	})
 }
 
-func TestRleAndOrXor32(t *testing.T) {
+func TestRleAndOrXor16(t *testing.T) {
 
 	Convey("RunContainer And, Or, Xor tests", t, func() {
 		{
-			rc := newRunContainer32TakeOwnership([]interval32{
+			rc := newRunContainer16TakeOwnership([]interval16{
 				{start: 0, endx: 1},
 				{start: 2, endx: 3},
 				{start: 4, endx: 5},
@@ -545,38 +545,38 @@ func TestRleAndOrXor32(t *testing.T) {
 
 			// test creating size 0 and 1 from array
 			arr := newArrayContainerCapacity(0)
-			empty := newRunContainer32FromArray(arr)
+			empty := newRunContainer16FromArray(arr)
 			onceler := newArrayContainerCapacity(1)
 			onceler.content = append(onceler.content, uint16(0))
-			oneZero := newRunContainer32FromArray(onceler)
+			oneZero := newRunContainer16FromArray(onceler)
 			So(empty.cardinality(), ShouldEqual, 0)
 			So(oneZero.cardinality(), ShouldEqual, 1)
 			So(empty.And(b0).GetCardinality(), ShouldEqual, 0)
 			So(empty.Or(b0).GetCardinality(), ShouldEqual, 3)
 
-			// exercise newRunContainer32FromVals() with 0 and 1 inputs.
-			empty2 := newRunContainer32FromVals(false, []uint32{}...)
+			// exercise newRunContainer16FromVals() with 0 and 1 inputs.
+			empty2 := newRunContainer16FromVals(false, []uint16{}...)
 			So(empty2.cardinality(), ShouldEqual, 0)
-			one2 := newRunContainer32FromVals(false, []uint32{1}...)
+			one2 := newRunContainer16FromVals(false, []uint16{1}...)
 			So(one2.cardinality(), ShouldEqual, 1)
 		}
 	})
 }
 
-func TestRlePanics32(t *testing.T) {
+func TestRlePanics16(t *testing.T) {
 
 	Convey("Some RunContainer calls/methods should panic if misused", t, func() {
 
-		// newRunContainer32FromVals
-		So(func() { newRunContainer32FromVals(true, 1, 0) }, ShouldPanic)
+		// newRunContainer16FromVals
+		So(func() { newRunContainer16FromVals(true, 1, 0) }, ShouldPanic)
 
 		arr := newArrayContainerRange(1, 3)
 		arr.content = []uint16{2, 3, 3, 2, 1}
-		So(func() { newRunContainer32FromArray(arr) }, ShouldPanic)
+		So(func() { newRunContainer16FromArray(arr) }, ShouldPanic)
 	})
 }
 
-func TestRleCoverageOddsAndEnds32(t *testing.T) {
+func TestRleCoverageOddsAndEnds16(t *testing.T) {
 
 	Convey("Some RunContainer code paths that don't otherwise get coverage -- these should be tested to increase percentage of code coverage in testing", t, func() {
 
@@ -587,28 +587,28 @@ func TestRleCoverageOddsAndEnds32(t *testing.T) {
 		rleVerbose = cur
 
 		// RunContainer.String()
-		rc := &runContainer32{}
-		So(rc.String(), ShouldEqual, "runContainer32{}")
-		rc.iv = make([]interval32, 1)
-		rc.iv[0] = interval32{start: 3, endx: 5}
-		So(rc.String(), ShouldEqual, "runContainer32{0:[3, 5), }")
+		rc := &runContainer16{}
+		So(rc.String(), ShouldEqual, "runContainer16{}")
+		rc.iv = make([]interval16, 1)
+		rc.iv[0] = interval16{start: 3, endx: 5}
+		So(rc.String(), ShouldEqual, "runContainer16{0:[3, 5), }")
 
-		a := interval32{start: 5, endx: 10}
-		b := interval32{start: 0, endx: 2}
-		c := interval32{start: 1, endx: 3}
+		a := interval16{start: 5, endx: 10}
+		b := interval16{start: 0, endx: 2}
+		c := interval16{start: 1, endx: 3}
 
-		// intersectInterval32s(a, b interval32)
-		isect, isEmpty := intersectInterval32s(a, b)
+		// intersectInterval16s(a, b interval16)
+		isect, isEmpty := intersectInterval16s(a, b)
 		So(isEmpty, ShouldBeTrue)
 		So(isect.runlen(), ShouldEqual, 0)
-		isect, isEmpty = intersectInterval32s(b, c)
+		isect, isEmpty = intersectInterval16s(b, c)
 		So(isEmpty, ShouldBeFalse)
 		So(isect.runlen(), ShouldEqual, 1)
 
-		// runContainer32.union
+		// runContainer16.union
 		{
-			ra := newRunContainer32FromVals(false, 4, 5)
-			rb := newRunContainer32FromVals(false, 4, 6, 8, 9, 10)
+			ra := newRunContainer16FromVals(false, 4, 5)
+			rb := newRunContainer16FromVals(false, 4, 6, 8, 9, 10)
 			ra.union(rb)
 			So(rb.indexOfIntervalAtOrAfter(4, 2), ShouldEqual, 2)
 			So(rb.indexOfIntervalAtOrAfter(3, 2), ShouldEqual, 2)
@@ -616,46 +616,46 @@ func TestRleCoverageOddsAndEnds32(t *testing.T) {
 
 		// runContainer.intersect
 		{
-			ra := newRunContainer32()
-			rb := newRunContainer32()
+			ra := newRunContainer16()
+			rb := newRunContainer16()
 			So(ra.intersect(rb).cardinality(), ShouldEqual, 0)
 		}
 		{
-			ra := newRunContainer32FromVals(false, 1)
-			rb := newRunContainer32FromVals(false, 4)
+			ra := newRunContainer16FromVals(false, 1)
+			rb := newRunContainer16FromVals(false, 4)
 			So(ra.intersect(rb).cardinality(), ShouldEqual, 0)
 		}
 
 		// runContainer.Add
 		{
-			ra := newRunContainer32FromVals(false, 1)
-			rb := newRunContainer32FromVals(false, 4)
+			ra := newRunContainer16FromVals(false, 1)
+			rb := newRunContainer16FromVals(false, 4)
 			So(ra.cardinality(), ShouldEqual, 1)
 			So(rb.cardinality(), ShouldEqual, 1)
 			ra.Add(5)
 			So(ra.cardinality(), ShouldEqual, 2)
 
-			// NewRunIterator32()
-			empty := newRunContainer32()
-			it := empty.NewRunIterator32()
+			// NewRunIterator16()
+			empty := newRunContainer16()
+			it := empty.NewRunIterator16()
 			So(func() { it.Next() }, ShouldPanic)
-			it2 := ra.NewRunIterator32()
+			it2 := ra.NewRunIterator16()
 			it2.curIndex = len(it2.rc.iv)
 			So(func() { it2.Next() }, ShouldPanic)
 
-			// RunIterator32.Remove()
-			emptyIt := empty.NewRunIterator32()
+			// RunIterator16.Remove()
+			emptyIt := empty.NewRunIterator16()
 			So(func() { emptyIt.Remove() }, ShouldPanic)
 
-			// newRunContainer32FromArray
+			// newRunContainer16FromArray
 			arr := newArrayContainerRange(1, 6)
 			arr.content = []uint16{5, 5, 5, 6, 9}
-			rc3 := newRunContainer32FromArray(arr)
+			rc3 := newRunContainer16FromArray(arr)
 			So(rc3.cardinality(), ShouldEqual, 3)
 
-			// runContainer32SerializedSizeInBytes
-			// runContainer32.SerializedSizeInBytes
-			_ = runContainer32SerializedSizeInBytes(3)
+			// runContainer16SerializedSizeInBytes
+			// runContainer16.SerializedSizeInBytes
+			_ = runContainer16SerializedSizeInBytes(3)
 			_ = rc3.serializedSizeInBytes()
 
 			// findNextIntervalThatIntersectsStartingFrom
@@ -671,16 +671,16 @@ func TestRleCoverageOddsAndEnds32(t *testing.T) {
 			rc3.Add(10)
 			rc3.Add(12)
 			So(rc3.cardinality(), ShouldEqual, 5)
-			it3 := rc3.NewRunIterator32()
+			it3 := rc3.NewRunIterator16()
 			it3.Next()
 			it3.Next()
 			it3.Next()
 			it3.Next()
 			//p("rc3 = %v", rc3) // 5, 6, 9, 10, 12
-			So(it3.Cur(), ShouldEqual, uint32(10))
+			So(it3.Cur(), ShouldEqual, uint16(10))
 			it3.Remove()
 			//p("after Remove of 10, rc3 = %v", rc3) // 5, 6, 9, 12
-			So(it3.Next(), ShouldEqual, uint32(12))
+			So(it3.Next(), ShouldEqual, uint16(12))
 		}
 	})
 }

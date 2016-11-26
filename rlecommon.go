@@ -2,6 +2,7 @@ package roaring
 
 import (
 	"fmt"
+	"sort"
 )
 
 // common to rle32.go and rle16.go
@@ -56,4 +57,107 @@ type searchOptions struct {
 	// naturally the default for search()
 	// when opt = nil.
 	EndxIndex int
+}
+
+// And finds the intersection of rc and b.
+func (rc *runContainer32) And(b *Bitmap) *Bitmap {
+	out := NewBitmap()
+	for _, p := range rc.iv {
+		for i := p.start; i < p.endx; i++ {
+			if b.Contains(i) {
+				out.Add(i)
+			}
+		}
+	}
+	return out
+}
+
+// Xor returns the exclusive-or of rc and b.
+func (rc *runContainer32) Xor(b *Bitmap) *Bitmap {
+	out := b.Clone()
+	for _, p := range rc.iv {
+		for v := p.start; v < p.endx; v++ {
+			if out.Contains(v) {
+				out.RemoveRange(uint64(v), uint64(v+1))
+			} else {
+				out.Add(v)
+			}
+		}
+	}
+	return out
+}
+
+// Or returns the union of rc and b.
+func (rc *runContainer32) Or(b *Bitmap) *Bitmap {
+	out := b.Clone()
+	for _, p := range rc.iv {
+		for v := p.start; v < p.endx; v++ {
+			out.Add(v)
+		}
+	}
+	return out
+}
+
+func showHash(name string, h map[int]bool) {
+	hv := []int{}
+	for k := range h {
+		hv = append(hv, k)
+	}
+	sort.Sort(sort.IntSlice(hv))
+	stringH := ""
+	for i := range hv {
+		stringH += fmt.Sprintf("%v, ", hv[i])
+	}
+
+	p("%s is (len %v): %s", name, len(h), stringH)
+}
+
+// trial is used in the randomized testing of runContainers
+type trial struct {
+	n           int
+	percentFill float64
+	ntrial      int
+
+	// only in the union test
+	percentDelete float64
+}
+
+// And finds the intersection of rc and b.
+func (rc *runContainer16) And(b *Bitmap) *Bitmap {
+	out := NewBitmap()
+	for _, p := range rc.iv {
+		for i := p.start; i < p.endx; i++ {
+			if b.Contains(uint32(i)) {
+				out.Add(uint32(i))
+			}
+		}
+	}
+	return out
+}
+
+// Xor returns the exclusive-or of rc and b.
+func (rc *runContainer16) Xor(b *Bitmap) *Bitmap {
+	out := b.Clone()
+	for _, p := range rc.iv {
+		for v := p.start; v < p.endx; v++ {
+			w := uint32(v)
+			if out.Contains(w) {
+				out.RemoveRange(uint64(w), uint64(w+1))
+			} else {
+				out.Add(w)
+			}
+		}
+	}
+	return out
+}
+
+// Or returns the union of rc and b.
+func (rc *runContainer16) Or(b *Bitmap) *Bitmap {
+	out := b.Clone()
+	for _, p := range rc.iv {
+		for v := p.start; v < p.endx; v++ {
+			out.Add(uint32(v))
+		}
+	}
+	return out
 }

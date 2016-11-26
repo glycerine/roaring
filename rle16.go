@@ -44,88 +44,88 @@ import (
 	"unsafe"
 )
 
-// runContainer32 does run-length encoding of sets of
-// uint32 integers.
-type runContainer32 struct {
-	iv   []interval32
+// runContainer16 does run-length encoding of sets of
+// uint16 integers.
+type runContainer16 struct {
+	iv   []interval16
 	card int
 
 	// avoid allocation during search
 	myOpts searchOptions
 }
 
-// interval32 is the internal to runContainer32
+// interval16 is the internal to runContainer16
 // structure that maintains the individual [start, endx)
 // half-open intervals.
-type interval32 struct {
-	start uint32
-	endx  uint32
+type interval16 struct {
+	start uint16
+	endx  uint16
 }
 
 // runlen returns iv.endx - iv.start, i.e. a
 // count of integers in the [start, endx) half-open interval.
-func (iv interval32) runlen() uint32 {
+func (iv interval16) runlen() uint16 {
 	return iv.endx - iv.start
 }
 
 // String produces a human viewable string of the contents.
-func (iv interval32) String() string {
+func (iv interval16) String() string {
 	return fmt.Sprintf("[%d, %d)", iv.start, iv.endx)
 }
 
 // String produces a human viewable string of the contents.
-func (rc *runContainer32) String() string {
+func (rc *runContainer16) String() string {
 	if len(rc.iv) == 0 {
-		return "runContainer32{}"
+		return "runContainer16{}"
 	}
 	var s string
 	for j, p := range rc.iv {
 		s += fmt.Sprintf("%v:[%d, %d), ", j, p.start, p.endx)
 	}
-	return `runContainer32{` + s + `}`
+	return `runContainer16{` + s + `}`
 }
 
-// uint32Slice is a sort.Sort convenience method
-type uint32Slice []uint32
+// uint16Slice is a sort.Sort convenience method
+type uint16Slice []uint16
 
 // Len returns the length of p.
-func (p uint32Slice) Len() int { return len(p) }
+func (p uint16Slice) Len() int { return len(p) }
 
 // Less returns p[i] < p[j]
-func (p uint32Slice) Less(i, j int) bool { return p[i] < p[j] }
+func (p uint16Slice) Less(i, j int) bool { return p[i] < p[j] }
 
 // Swap swaps elements i and j.
-func (p uint32Slice) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
+func (p uint16Slice) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
 
-// newRunContainer32FromVals makes a new container from vals.
+// newRunContainer16FromVals makes a new container from vals.
 //
 // For efficiency, vals should be sorted in ascending order.
 // Ideally vals should not contain duplicates, but we detect and
 // ignore them. If vals is already sorted in ascending order, then
 // pass alreadySorted = true. Otherwise, for !alreadySorted,
-// we will sort vals before creating a runContainer32 of them.
+// we will sort vals before creating a runContainer16 of them.
 // We sort the original vals, so this will change what the
 // caller sees in vals as a side effect.
-func newRunContainer32FromVals(alreadySorted bool, vals ...uint32) *runContainer32 {
-	// keep this in sync with newRunContainer32FromArray below
+func newRunContainer16FromVals(alreadySorted bool, vals ...uint16) *runContainer16 {
+	// keep this in sync with newRunContainer16FromArray below
 
 	if !alreadySorted {
-		sort.Sort(uint32Slice(vals))
+		sort.Sort(uint16Slice(vals))
 	}
-	m := make([]interval32, 0)
+	m := make([]interval16, 0)
 	n := len(vals)
 	actuallyAdded := 0
-	var cur, prev uint32
+	var cur, prev uint16
 	switch {
 	case n == 0:
 		// nothing more
 	case n == 1:
-		m = append(m, interval32{start: vals[0], endx: vals[0] + 1})
+		m = append(m, interval16{start: vals[0], endx: vals[0] + 1})
 		actuallyAdded++
 	default:
 		runstart := vals[0]
 		actuallyAdded++
-		var runlen uint32
+		var runlen uint16
 		for i := 1; i < n; i++ {
 			prev = vals[i-1]
 			cur = vals[i]
@@ -134,7 +134,7 @@ func newRunContainer32FromVals(alreadySorted bool, vals ...uint32) *runContainer
 				actuallyAdded++
 			} else {
 				if cur < prev {
-					panic(fmt.Sprintf("newRunContainer32FromVals sees "+
+					panic(fmt.Sprintf("newRunContainer16FromVals sees "+
 						"unsorted vals; vals[%v]=cur=%v < prev=%v. Sort your vals"+
 						" before calling us with alreadySorted == true.", i, cur, prev))
 				}
@@ -142,47 +142,47 @@ func newRunContainer32FromVals(alreadySorted bool, vals ...uint32) *runContainer
 					// ignore duplicates
 				} else {
 					actuallyAdded++
-					m = append(m, interval32{start: runstart, endx: runstart + 1 + runlen})
+					m = append(m, interval16{start: runstart, endx: runstart + 1 + runlen})
 					runstart = cur
 					runlen = 0
 				}
 			}
 		}
-		m = append(m, interval32{start: runstart, endx: runstart + 1 + runlen})
+		m = append(m, interval16{start: runstart, endx: runstart + 1 + runlen})
 	}
-	return &runContainer32{iv: m, card: actuallyAdded}
+	return &runContainer16{iv: m, card: actuallyAdded}
 }
 
 //
-// newRunContainer32FromArray populates a new
-// runContainer32 from the contents of arr.
+// newRunContainer16FromArray populates a new
+// runContainer16 from the contents of arr.
 //
-func newRunContainer32FromArray(arr *arrayContainer) *runContainer32 {
-	// keep this in sync with newRunContainer32FromVals above
+func newRunContainer16FromArray(arr *arrayContainer) *runContainer16 {
+	// keep this in sync with newRunContainer16FromVals above
 
 	n := arr.getCardinality()
 	actuallyAdded := 0
-	m := make([]interval32, 0)
-	var cur, prev uint32
+	m := make([]interval16, 0)
+	var cur, prev uint16
 	switch {
 	case n == 0:
 		// nothing more
 	case n == 1:
-		m = append(m, interval32{start: uint32(arr.content[0]), endx: uint32(arr.content[0]) + 1})
+		m = append(m, interval16{start: uint16(arr.content[0]), endx: uint16(arr.content[0]) + 1})
 		actuallyAdded++
 	default:
-		runstart := uint32(arr.content[0])
+		runstart := uint16(arr.content[0])
 		actuallyAdded++
-		var runlen uint32
+		var runlen uint16
 		for i := 1; i < n; i++ {
-			prev = uint32(arr.content[i-1])
-			cur = uint32(arr.content[i])
+			prev = uint16(arr.content[i-1])
+			cur = uint16(arr.content[i])
 			if cur == prev+1 {
 				runlen++
 				actuallyAdded++
 			} else {
 				if cur < prev {
-					panic(fmt.Sprintf("newRunContainer32FromVals sees "+
+					panic(fmt.Sprintf("newRunContainer16FromVals sees "+
 						"unsorted vals; vals[%v]=cur=%v < prev=%v. Sort your vals"+
 						" before calling us with alreadySorted == true.", i, cur, prev))
 				}
@@ -190,15 +190,15 @@ func newRunContainer32FromArray(arr *arrayContainer) *runContainer32 {
 					//p("ignore duplicates")
 				} else {
 					actuallyAdded++
-					m = append(m, interval32{start: runstart, endx: runstart + 1 + runlen})
+					m = append(m, interval16{start: runstart, endx: runstart + 1 + runlen})
 					runstart = cur
 					runlen = 0
 				}
 			}
 		}
-		m = append(m, interval32{start: runstart, endx: runstart + 1 + runlen})
+		m = append(m, interval16{start: runstart, endx: runstart + 1 + runlen})
 	}
-	return &runContainer32{iv: m, card: actuallyAdded}
+	return &runContainer16{iv: m, card: actuallyAdded}
 }
 
 // set adds the integers in vals to the set. Vals
@@ -208,10 +208,10 @@ func newRunContainer32FromArray(arr *arrayContainer) *runContainer32 {
 // view of vals).
 //
 // If you have a small number of additions to an already
-// big runContainer32, calling Add() may be faster.
-func (rc *runContainer32) set(alreadySorted bool, vals ...uint32) {
+// big runContainer16, calling Add() may be faster.
+func (rc *runContainer16) set(alreadySorted bool, vals ...uint16) {
 
-	rc2 := newRunContainer32FromVals(alreadySorted, vals...)
+	rc2 := newRunContainer16FromVals(alreadySorted, vals...)
 	//p("set: rc2 is %s", rc2)
 	un := rc.union(rc2)
 	rc.iv = un.iv
@@ -222,7 +222,7 @@ func (rc *runContainer32) set(alreadySorted bool, vals ...uint32) {
 // a and b either overlap or they are
 // contiguous and so can be merged into
 // a single interval.
-func canMerge32(a, b interval32) bool {
+func canMerge16(a, b interval16) bool {
 	if a.endx < b.start {
 		return false
 	}
@@ -234,17 +234,17 @@ func canMerge32(a, b interval32) bool {
 // and b would contain an element (otherwise
 // it would be the empty set, and we return
 // false).
-func haveOverlap32(a, b interval32) bool {
+func haveOverlap16(a, b interval16) bool {
 	if a.endx <= b.start {
 		return false
 	}
 	return b.endx > a.start
 }
 
-// mergeInterval32s joins a and b into a
+// mergeInterval16s joins a and b into a
 // new interval, and panics if it cannot.
-func mergeInterval32s(a, b interval32) (res interval32) {
-	if !canMerge32(a, b) {
+func mergeInterval16s(a, b interval16) (res interval16) {
+	if !canMerge16(a, b) {
 		panic(fmt.Sprintf("cannot merge %#v and %#v", a, b))
 	}
 	if b.start < a.start {
@@ -260,11 +260,11 @@ func mergeInterval32s(a, b interval32) (res interval32) {
 	return
 }
 
-// intersectInterval32s returns the intersection
+// intersectInterval16s returns the intersection
 // of a and b. The isEmpty flag will be true if
 // a and b were disjoint.
-func intersectInterval32s(a, b interval32) (res interval32, isEmpty bool) {
-	if !haveOverlap32(a, b) {
+func intersectInterval16s(a, b interval16) (res interval16, isEmpty bool) {
+	if !haveOverlap16(a, b) {
 		isEmpty = true
 		return
 	}
@@ -281,14 +281,14 @@ func intersectInterval32s(a, b interval32) (res interval32, isEmpty bool) {
 	return
 }
 
-// union merges two runContainer32s, producing
-// a new runContainer32 with the union of rc and b.
-func (rc *runContainer32) union(b *runContainer32) *runContainer32 {
+// union merges two runContainer16s, producing
+// a new runContainer16 with the union of rc and b.
+func (rc *runContainer16) union(b *runContainer16) *runContainer16 {
 
 	// rc is also known as 'a' here, but golint insisted we
 	// call it rc for consistency with the rest of the methods.
 
-	m := make([]interval32, 0)
+	m := make([]interval16, 0)
 
 	alim := len(rc.iv)
 	blim := len(b.iv)
@@ -298,11 +298,11 @@ func (rc *runContainer32) union(b *runContainer32) *runContainer32 {
 
 	// merged holds the current merge output, which might
 	// get additional merges before being appended to m.
-	var merged interval32
+	var merged interval16
 	var mergedUsed bool // is merged being used at the moment?
 
-	var cura interval32 // currently considering this interval32 from a
-	var curb interval32 // currently considering this interval32 from b
+	var cura interval16 // currently considering this interval16 from a
+	var curb interval16 // currently considering this interval16 from b
 
 	pass := 0
 	for na < alim && nb < blim {
@@ -315,15 +315,15 @@ func (rc *runContainer32) union(b *runContainer32) *runContainer32 {
 		if mergedUsed {
 			//p("mergedUsed is true")
 			mergedUpdated := false
-			if canMerge32(cura, merged) {
-				//p("canMerge32(cura=%s, merged=%s) is true", cura, merged)
-				merged = mergeInterval32s(cura, merged)
+			if canMerge16(cura, merged) {
+				//p("canMerge16(cura=%s, merged=%s) is true", cura, merged)
+				merged = mergeInterval16s(cura, merged)
 				na = rc.indexOfIntervalAtOrAfter(merged.endx, na+1)
 				mergedUpdated = true
 			}
-			if canMerge32(curb, merged) {
-				//p("canMerge32(curb=%s, merged=%s) is true", curb, merged)
-				merged = mergeInterval32s(curb, merged)
+			if canMerge16(curb, merged) {
+				//p("canMerge16(curb=%s, merged=%s) is true", curb, merged)
+				merged = mergeInterval16s(curb, merged)
 				nb = b.indexOfIntervalAtOrAfter(merged.endx, nb+1)
 				mergedUpdated = true
 			}
@@ -338,7 +338,7 @@ func (rc *runContainer32) union(b *runContainer32) *runContainer32 {
 		} else {
 			//p("!mergedUsed")
 			// !mergedUsed
-			if !canMerge32(cura, curb) {
+			if !canMerge16(cura, curb) {
 				if cura.start < curb.start {
 					//p("cura is before curb")
 					m = append(m, cura)
@@ -350,7 +350,7 @@ func (rc *runContainer32) union(b *runContainer32) *runContainer32 {
 				}
 			} else {
 				//p("intervals are not disjoint, we can merge them. cura=%s, curb=%s", cura, curb)
-				merged = mergeInterval32s(cura, curb)
+				merged = mergeInterval16s(cura, curb)
 				mergedUsed = true
 				na = rc.indexOfIntervalAtOrAfter(merged.endx, na+1)
 				nb = b.indexOfIntervalAtOrAfter(merged.endx, nb+1)
@@ -372,9 +372,9 @@ func (rc *runContainer32) union(b *runContainer32) *runContainer32 {
 		aAdds:
 			for na < alim {
 				cura = rc.iv[na]
-				if canMerge32(cura, merged) {
-					//p("canMerge32(cura=%s, merged=%s) is true. na=%v", cura, merged, na)
-					merged = mergeInterval32s(cura, merged)
+				if canMerge16(cura, merged) {
+					//p("canMerge16(cura=%s, merged=%s) is true. na=%v", cura, merged, na)
+					merged = mergeInterval16s(cura, merged)
 					na = rc.indexOfIntervalAtOrAfter(merged.endx, na+1)
 				} else {
 					break aAdds
@@ -387,9 +387,9 @@ func (rc *runContainer32) union(b *runContainer32) *runContainer32 {
 		bAdds:
 			for nb < blim {
 				curb = b.iv[nb]
-				if canMerge32(curb, merged) {
-					//p("canMerge32(curb=%s, merged=%s) is true. nb=%v", curb, merged, nb)
-					merged = mergeInterval32s(curb, merged)
+				if canMerge16(curb, merged) {
+					//p("canMerge16(curb=%s, merged=%s) is true. nb=%v", curb, merged, nb)
+					merged = mergeInterval16s(curb, merged)
 					nb = b.indexOfIntervalAtOrAfter(merged.endx, nb+1)
 				} else {
 					break bAdds
@@ -398,23 +398,23 @@ func (rc *runContainer32) union(b *runContainer32) *runContainer32 {
 
 		}
 
-		//p("mergedUsed==true, before adding merged=%s, m=%v", merged, sliceToString32(m))
+		//p("mergedUsed==true, before adding merged=%s, m=%v", merged, sliceToString16(m))
 		m = append(m, merged)
-		//p("added mergedUsed, m=%v", sliceToString32(m))
+		//p("added mergedUsed, m=%v", sliceToString16(m))
 	}
 	if na < alim {
-		//p("adding the rest of a.vi[na:] = %v", sliceToString32(rc.iv[na:]))
+		//p("adding the rest of a.vi[na:] = %v", sliceToString16(rc.iv[na:]))
 		m = append(m, rc.iv[na:]...)
-		//p("after the rest of a.vi[na:] to m, now m = %v", sliceToString32(m))
+		//p("after the rest of a.vi[na:] to m, now m = %v", sliceToString16(m))
 	}
 	if nb < blim {
-		//p("adding the rest of b.vi[nb:] = %v", sliceToString32(b.iv[nb:]))
+		//p("adding the rest of b.vi[nb:] = %v", sliceToString16(b.iv[nb:]))
 		m = append(m, b.iv[nb:]...)
-		//p("after the rest of a.vi[nb:] to m, now m = %v", sliceToString32(m))
+		//p("after the rest of a.vi[nb:] to m, now m = %v", sliceToString16(m))
 	}
 
-	//p("making res out of m = %v", sliceToString32(m))
-	res := &runContainer32{iv: m}
+	//p("making res out of m = %v", sliceToString16(m))
+	res := &runContainer16{iv: m}
 	//p("union returning %s", res)
 	return res
 }
@@ -423,7 +423,7 @@ func (rc *runContainer32) union(b *runContainer32) *runContainer32 {
 // for already and panic, as this is dedicated to use
 // by union() and that should always be the case when
 // union calls.
-func (rc *runContainer32) indexOfIntervalAtOrAfter(key uint32, startIndex int) int {
+func (rc *runContainer16) indexOfIntervalAtOrAfter(key uint16, startIndex int) int {
 	rc.myOpts.StartIndex = startIndex
 	rc.myOpts.EndxIndex = 0
 
@@ -434,27 +434,27 @@ func (rc *runContainer32) indexOfIntervalAtOrAfter(key uint32, startIndex int) i
 	return w + 1
 }
 
-// intersect returns a new runContainer32 holding the
+// intersect returns a new runContainer16 holding the
 // intersection of rc (also known as 'a')  and b.
-func (rc *runContainer32) intersect(b *runContainer32) *runContainer32 {
+func (rc *runContainer16) intersect(b *runContainer16) *runContainer16 {
 
 	a := rc
 	numa := len(a.iv)
 	numb := len(b.iv)
-	res := &runContainer32{}
+	res := &runContainer16{}
 	if numa == 0 || numb == 0 {
 		//p("intersection is empty, returning early")
 		return res
 	}
 
 	if numa == 1 && numb == 1 {
-		if !haveOverlap32(a.iv[0], b.iv[0]) {
+		if !haveOverlap16(a.iv[0], b.iv[0]) {
 			//p("intersection is empty, returning early")
 			return res
 		}
 	}
 
-	output := make([]interval32, 0)
+	output := make([]interval16, 0)
 
 	acuri := 0
 	bcuri := 0
@@ -462,8 +462,8 @@ func (rc *runContainer32) intersect(b *runContainer32) *runContainer32 {
 	astart := a.iv[acuri].start
 	bstart := b.iv[bcuri].start
 
-	var intersection interval32
-	var leftoverStart uint32
+	var intersection interval16
+	var leftoverStart uint16
 	var isOverlap, isLeftoverA, isLeftoverB bool
 	var done bool
 	pass := 0
@@ -472,7 +472,7 @@ toploop:
 		//p("============     top of loop, pass = %v", pass)
 		pass++
 
-		isOverlap, isLeftoverA, isLeftoverB, leftoverStart, intersection = intersectWithLeftover32(astart, a.iv[acuri].endx, bstart, b.iv[bcuri].endx)
+		isOverlap, isLeftoverA, isLeftoverB, leftoverStart, intersection = intersectWithLeftover16(astart, a.iv[acuri].endx, bstart, b.iv[bcuri].endx)
 
 		//p("acuri=%v, astart=%v, a.iv[acuri].endx=%v,   bcuri=%v, bstart=%v, b.iv[bcuri].endx=%v, isOverlap=%v, isLeftoverA=%v, isLeftoverB=%v, leftoverStart=%v, intersection = %#v", acuri, astart, a.iv[acuri].endx, bcuri, bstart, b.iv[bcuri].endx, isOverlap, isLeftoverA, isLeftoverB, leftoverStart, intersection)
 
@@ -565,44 +565,44 @@ toploop:
 }
 
 // get returns true iff key is in the container.
-func (rc *runContainer32) get(key uint32) bool {
+func (rc *runContainer16) get(key uint16) bool {
 	_, in, _ := rc.search(key, nil)
 	return in
 }
 
 // numIntervals returns the count of intervals in the container.
-func (rc *runContainer32) numIntervals() int {
+func (rc *runContainer16) numIntervals() int {
 	return len(rc.iv)
 }
 
 // search returns alreadyPresent to indicate if the
-// key is already in one of our interval32s.
+// key is already in one of our interval16s.
 //
-// If key is alreadyPresent, then whichInterval32 tells
+// If key is alreadyPresent, then whichInterval16 tells
 // you where.
 //
-// If key is not already present, then whichInterval32 is
+// If key is not already present, then whichInterval16 is
 // set as follows:
 //
-//  a) whichInterval32 == len(rc.iv)-1 if key is beyond our
-//     last interval32 in rc.iv;
+//  a) whichInterval16 == len(rc.iv)-1 if key is beyond our
+//     last interval16 in rc.iv;
 //
-//  b) whichInterval32 == -1 if key is before our first
-//     interval32 in rc.iv;
+//  b) whichInterval16 == -1 if key is before our first
+//     interval16 in rc.iv;
 //
-//  c) whichInterval32 is set to the minimum index of rc.iv
+//  c) whichInterval16 is set to the minimum index of rc.iv
 //     which comes strictly before the key;
-//     so  key >= rc.iv[whichInterval32].endx,
-//     and  if whichInterval32+1 exists, then key < rc.iv[whichInterval32+1].startx
-//     (Note that whichInterval32+1 won't exist when
-//     whichInterval32 is the last interval.)
+//     so  key >= rc.iv[whichInterval16].endx,
+//     and  if whichInterval16+1 exists, then key < rc.iv[whichInterval16+1].startx
+//     (Note that whichInterval16+1 won't exist when
+//     whichInterval16 is the last interval.)
 //
-// runContainer32.search always returns whichInterval32 < len(rc.iv).
+// runContainer16.search always returns whichInterval16 < len(rc.iv).
 //
 // If not nil, opts can be used to further restrict
 // the search space.
 //
-func (rc *runContainer32) search(key uint32, opts *searchOptions) (whichInterval32 int, alreadyPresent bool, numCompares int) {
+func (rc *runContainer16) search(key uint16, opts *searchOptions) (whichInterval16 int, alreadyPresent bool, numCompares int) {
 
 	n := len(rc.iv)
 	if n == 0 {
@@ -650,24 +650,24 @@ func (rc *runContainer32) search(key uint32, opts *searchOptions) (whichInterval
 			return key < rc.iv[i].start
 		})
 	*/
-	whichInterval32 = below - 1
+	whichInterval16 = below - 1
 
 	if below == n {
-		// all falses => key is >= start of all interval32s
-		// ... so does it belong to the last interval32?
+		// all falses => key is >= start of all interval16s
+		// ... so does it belong to the last interval16?
 		if key < rc.iv[n-1].endx {
-			// yes, it belongs to the last interval32
+			// yes, it belongs to the last interval16
 			alreadyPresent = true
 			return
 		}
-		// no, it is beyond the last interval32.
+		// no, it is beyond the last interval16.
 		// leave alreadyPreset = false
 		return
 	}
 
 	// INVAR: key is below rc.iv[below]
 	if below == 0 {
-		// key is before the first first interval32.
+		// key is before the first first interval16.
 		// leave alreadyPresent = false
 		return
 	}
@@ -675,9 +675,9 @@ func (rc *runContainer32) search(key uint32, opts *searchOptions) (whichInterval
 	// INVAR: key is >= rc.iv[below-1].start and
 	//        key is <  rc.iv[below].start
 
-	// is key in below-1 interval32?
+	// is key in below-1 interval16?
 	if key >= rc.iv[below-1].start && key < rc.iv[below-1].endx {
-		// yes, it is. key is in below-1 interval32.
+		// yes, it is. key is in below-1 interval16.
 		alreadyPresent = true
 		return
 	}
@@ -689,8 +689,8 @@ func (rc *runContainer32) search(key uint32, opts *searchOptions) (whichInterval
 }
 
 // cardinality returns the count of the integers stored in the
-// runContainer32.
-func (rc *runContainer32) cardinality() int {
+// runContainer16.
+func (rc *runContainer16) cardinality() int {
 	if len(rc.iv) == 0 {
 		rc.card = 0
 		return 0
@@ -707,64 +707,64 @@ func (rc *runContainer32) cardinality() int {
 	return n
 }
 
-// AsSlice decompresses the contents into a []uint32 slice.
-func (rc *runContainer32) AsSlice() []uint32 {
-	s := make([]uint32, rc.cardinality())
+// AsSlice decompresses the contents into a []uint16 slice.
+func (rc *runContainer16) AsSlice() []uint16 {
+	s := make([]uint16, rc.cardinality())
 	j := 0
 	for _, p := range rc.iv {
 		for i := p.start; i < p.endx; i++ {
-			s[j] = uint32(i)
+			s[j] = uint16(i)
 			j++
 		}
 	}
 	return s
 }
 
-// newRunContainer32 creates an empty run container.
-func newRunContainer32() *runContainer32 {
-	return &runContainer32{}
+// newRunContainer16 creates an empty run container.
+func newRunContainer16() *runContainer16 {
+	return &runContainer16{}
 }
 
-// newRunContainer32CopyIv creates a run container, initializing
+// newRunContainer16CopyIv creates a run container, initializing
 // with a copy of the supplied iv slice.
 //
-func newRunContainer32CopyIv(iv []interval32) *runContainer32 {
-	rc := &runContainer32{
-		iv: make([]interval32, len(iv)),
+func newRunContainer16CopyIv(iv []interval16) *runContainer16 {
+	rc := &runContainer16{
+		iv: make([]interval16, len(iv)),
 	}
 	copy(rc.iv, iv)
 	return rc
 }
 
-// newRunContainer32TakeOwnership returns a new runContainer32
+// newRunContainer16TakeOwnership returns a new runContainer16
 // backed by the provided iv slice, which we will
 // assume exclusive control over from now on.
 //
-func newRunContainer32TakeOwnership(iv []interval32) *runContainer32 {
-	rc := &runContainer32{
+func newRunContainer16TakeOwnership(iv []interval16) *runContainer16 {
+	rc := &runContainer16{
 		iv: iv,
 	}
 	return rc
 }
 
-const baseRc32Size = int(unsafe.Sizeof(runContainer32{}))
-const perIntervalRc32Size = int(unsafe.Sizeof(interval32{}))
+const baseRc16Size = int(unsafe.Sizeof(runContainer16{}))
+const perIntervalRc16Size = int(unsafe.Sizeof(interval16{}))
 
-// runContainer32SerializedSizeInBytes returns the number of bytes of memory
-// required to hold numRuns in a runContainer32.
-func runContainer32SerializedSizeInBytes(numRuns int) int {
-	return perIntervalRc32Size * numRuns
+// runContainer16SerializedSizeInBytes returns the number of bytes of memory
+// required to hold numRuns in a runContainer16.
+func runContainer16SerializedSizeInBytes(numRuns int) int {
+	return perIntervalRc16Size * numRuns
 }
 
 // serializedSizeInBytes returns the number of bytes of memory
-// required by this runContainer32.
-func (rc *runContainer32) serializedSizeInBytes() int {
-	return perIntervalRc32Size * rc.cardinality()
+// required by this runContainer16.
+func (rc *runContainer16) serializedSizeInBytes() int {
+	return perIntervalRc16Size * rc.cardinality()
 }
 
 // Add adds a single value k to the set.
-func (rc *runContainer32) Add(k uint32) {
-	// TODO comment from runContainer32.java:
+func (rc *runContainer16) Add(k uint16) {
+	// TODO comment from runContainer16.java:
 	// it might be better and simpler to do return
 	// toBitmapOrArrayContainer(getCardinality()).add(k)
 	// but note that some unit tests use this method to build up test
@@ -786,8 +786,8 @@ func (rc *runContainer32) Add(k uint32) {
 				return
 			}
 		}
-		// nope, k stands alone, starting the new first interval32.
-		rc.iv = append([]interval32{interval32{start: k, endx: k + 1}}, rc.iv...)
+		// nope, k stands alone, starting the new first interval16.
+		rc.iv = append([]interval16{interval16{start: k, endx: k + 1}}, rc.iv...)
 		return
 	}
 
@@ -797,15 +797,15 @@ func (rc *runContainer32) Add(k uint32) {
 			rc.iv[n-1].endx++
 			return
 		}
-		rc.iv = append(rc.iv, interval32{start: k, endx: k + 1})
+		rc.iv = append(rc.iv, interval16{start: k, endx: k + 1})
 		return
 	}
 
 	// INVAR: index and index+1 both exist, and k goes between them.
 	//
 	// Now: add k into the middle,
-	// possibly fusing with index or index+1 interval32
-	// and possibly resulting in fusing of two interval32s
+	// possibly fusing with index or index+1 interval16
+	// and possibly resulting in fusing of two interval16s
 	// that had a one integer gap.
 
 	left := index
@@ -834,30 +834,30 @@ func (rc *runContainer32) Add(k uint32) {
 		return
 	}
 
-	// k makes a standalone new interval32, inserted in the middle
-	tail := append([]interval32{interval32{start: k, endx: k + 1}}, rc.iv[right:]...)
+	// k makes a standalone new interval16, inserted in the middle
+	tail := append([]interval16{interval16{start: k, endx: k + 1}}, rc.iv[right:]...)
 	rc.iv = append(rc.iv[:left+1], tail...)
 }
 
-// RunIterator32 advice: you must call Next() at least once
+// RunIterator16 advice: you must call Next() at least once
 // before calling Cur(); and you should call HasNext()
 // before calling Next() to insure there are contents.
-type RunIterator32 struct {
-	rc            *runContainer32
+type RunIterator16 struct {
+	rc            *runContainer16
 	curIndex      int
-	curPosInIndex uint32
+	curPosInIndex uint16
 	curSeq        int
 }
 
-// NewRunIterator32 returns a new empty run container.
-func (rc *runContainer32) NewRunIterator32() *RunIterator32 {
-	return &RunIterator32{rc: rc, curIndex: -1}
+// NewRunIterator16 returns a new empty run container.
+func (rc *runContainer16) NewRunIterator16() *RunIterator16 {
+	return &RunIterator16{rc: rc, curIndex: -1}
 }
 
 // HasNext returns false if calling Next will panic. It
 // returns true when there is at least one more value
 // available in the iteration sequence.
-func (ri *RunIterator32) HasNext() bool {
+func (ri *RunIterator16) HasNext() bool {
 	if len(ri.rc.iv) == 0 {
 		return false
 	}
@@ -868,13 +868,13 @@ func (ri *RunIterator32) HasNext() bool {
 }
 
 // Cur returns the current value pointed to by the iterator.
-func (ri *RunIterator32) Cur() uint32 {
+func (ri *RunIterator16) Cur() uint16 {
 	//p("in Cur, curIndex=%v, curPosInIndex=%v", ri.curIndex, ri.curPosInIndex)
 	return ri.rc.iv[ri.curIndex].start + ri.curPosInIndex
 }
 
 // Next returns the next value in the iteration sequence.
-func (ri *RunIterator32) Next() uint32 {
+func (ri *RunIterator16) Next() uint16 {
 	if !ri.HasNext() {
 		panic("no Next available")
 	}
@@ -902,10 +902,10 @@ func (ri *RunIterator32) Next() uint32 {
 // is on from the run container. You can use
 // Cur if you want to double check what is about
 // to be deleted.
-func (ri *RunIterator32) Remove() uint32 {
+func (ri *RunIterator16) Remove() uint16 {
 	n := ri.rc.cardinality()
 	if n == 0 {
-		panic("RunIterator.Remove called on empty runContainer32")
+		panic("RunIterator.Remove called on empty runContainer16")
 	}
 	cur := ri.Cur()
 
@@ -914,7 +914,7 @@ func (ri *RunIterator32) Remove() uint32 {
 }
 
 // remove removes key from the container.
-func (rc *runContainer32) remove(key uint32) (wasPresent bool) {
+func (rc *runContainer16) remove(key uint16) (wasPresent bool) {
 	var index, curSeq int
 	index, wasPresent, _ = rc.search(key, nil)
 	if !wasPresent {
@@ -927,18 +927,18 @@ func (rc *runContainer32) remove(key uint32) (wasPresent bool) {
 
 // internal helper functions
 
-func (rc *runContainer32) deleteAt(curIndex *int, curPosInIndex *uint32, curSeq *int) {
+func (rc *runContainer16) deleteAt(curIndex *int, curPosInIndex *uint16, curSeq *int) {
 	rc.card--
 	(*curSeq)--
 	ci := *curIndex
 	pos := *curPosInIndex
 
-	// are we first, last, or in the middle of our interval32?
+	// are we first, last, or in the middle of our interval16?
 	switch {
 	case pos == 0:
 		// first
 		rc.iv[ci].start++
-		// does our interval32 disappear?
+		// does our interval16 disappear?
 		if rc.iv[ci].start == rc.iv[ci].endx {
 			// yes, delete it
 			rc.iv = append(rc.iv[:ci], rc.iv[ci+1:]...)
@@ -949,7 +949,7 @@ func (rc *runContainer32) deleteAt(curIndex *int, curPosInIndex *uint32, curSeq 
 	case pos == rc.iv[ci].runlen()-1:
 		// last
 		rc.iv[ci].endx--
-		// our interval32 cannot disappear, else we would have been pos == 0, case first above.
+		// our interval16 cannot disappear, else we would have been pos == 0, case first above.
 		//p("deleteAt: pos is last case, curIndex=%v, curPosInIndex=%v", *curIndex, *curPosInIndex)
 		(*curPosInIndex)--
 		// if we leave *curIndex alone, then Next() will work properly even after the delete.
@@ -957,19 +957,19 @@ func (rc *runContainer32) deleteAt(curIndex *int, curPosInIndex *uint32, curSeq 
 	default:
 		//p("middle...split")
 		//middle
-		// split into two, adding an interval32
-		new0 := interval32{
+		// split into two, adding an interval16
+		new0 := interval16{
 			start: rc.iv[ci].start,
 			endx:  rc.iv[ci].start + *curPosInIndex}
 
-		new1 := interval32{
+		new1 := interval16{
 			start: rc.iv[ci].start + *curPosInIndex + 1,
 			endx:  rc.iv[ci].endx}
 
 		//p("new0 = %#v", new0)
 		//p("new1 = %#v", new1)
 
-		tail := append([]interval32{new0, new1}, rc.iv[ci+1:]...)
+		tail := append([]interval16{new0, new1}, rc.iv[ci+1:]...)
 		rc.iv = append(rc.iv[:ci], tail...)
 		// update curIndex and curPosInIndex
 		(*curIndex)++
@@ -978,15 +978,15 @@ func (rc *runContainer32) deleteAt(curIndex *int, curPosInIndex *uint32, curSeq 
 
 }
 
-func have4Overlap32(astart, aendx, bstart, bendx uint32) bool {
+func have4Overlap16(astart, aendx, bstart, bendx uint16) bool {
 	if aendx <= bstart {
 		return false
 	}
 	return bendx > astart
 }
 
-func intersectWithLeftover32(astart, aendx, bstart, bendx uint32) (isOverlap, isLeftoverA, isLeftoverB bool, leftoverStart uint32, intersection interval32) {
-	if !have4Overlap32(astart, aendx, bstart, bendx) {
+func intersectWithLeftover16(astart, aendx, bstart, bendx uint16) (isOverlap, isLeftoverA, isLeftoverB bool, leftoverStart uint16, intersection interval16) {
+	if !have4Overlap16(astart, aendx, bstart, bendx) {
 		return
 	}
 	isOverlap = true
@@ -1014,7 +1014,7 @@ func intersectWithLeftover32(astart, aendx, bstart, bendx uint32) (isOverlap, is
 	return
 }
 
-func (rc *runContainer32) findNextIntervalThatIntersectsStartingFrom(startIndex int, key uint32) (index int, done bool) {
+func (rc *runContainer16) findNextIntervalThatIntersectsStartingFrom(startIndex int, key uint16) (index int, done bool) {
 
 	rc.myOpts.StartIndex = startIndex
 	rc.myOpts.EndxIndex = 0
@@ -1034,7 +1034,7 @@ func (rc *runContainer32) findNextIntervalThatIntersectsStartingFrom(startIndex 
 	return w, false
 }
 
-func sliceToString32(m []interval32) string {
+func sliceToString16(m []interval16) string {
 	s := ""
 	for i := range m {
 		s += fmt.Sprintf("%v: %s, ", i, m[i])
