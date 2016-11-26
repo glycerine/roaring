@@ -112,7 +112,7 @@ func newRunContainer32FromVals(alreadySorted bool, vals ...uint32) *runContainer
 	if !alreadySorted {
 		sort.Sort(uint32Slice(vals))
 	}
-	m := make([]interval32, 0)
+	var m []interval32
 	n := len(vals)
 	actuallyAdded := 0
 	var cur, prev uint32
@@ -162,7 +162,7 @@ func newRunContainer32FromArray(arr *arrayContainer) *runContainer32 {
 
 	n := arr.getCardinality()
 	actuallyAdded := 0
-	m := make([]interval32, 0)
+	var m []interval32
 	var cur, prev uint32
 	switch {
 	case n == 0:
@@ -288,7 +288,7 @@ func (rc *runContainer32) union(b *runContainer32) *runContainer32 {
 	// rc is also known as 'a' here, but golint insisted we
 	// call it rc for consistency with the rest of the methods.
 
-	m := make([]interval32, 0)
+	var m []interval32
 
 	alim := len(rc.iv)
 	blim := len(b.iv)
@@ -454,7 +454,7 @@ func (rc *runContainer32) intersect(b *runContainer32) *runContainer32 {
 		}
 	}
 
-	output := make([]interval32, 0)
+	var output []interval32
 
 	acuri := 0
 	bcuri := 0
