@@ -756,12 +756,6 @@ func runContainer32SerializedSizeInBytes(numRuns int) int {
 	return perIntervalRc32Size * numRuns
 }
 
-// serializedSizeInBytes returns the number of bytes of memory
-// required by this runContainer32.
-func (rc *runContainer32) serializedSizeInBytes() int {
-	return perIntervalRc32Size * rc.cardinality()
-}
-
 // Add adds a single value k to the set.
 func (rc *runContainer32) Add(k uint32) {
 	// TODO comment from runContainer32.java:
@@ -914,7 +908,7 @@ func (ri *RunIterator32) Remove() uint32 {
 }
 
 // remove removes key from the container.
-func (rc *runContainer32) remove(key uint32) (wasPresent bool) {
+func (rc *runContainer32) removeKey(key uint32) (wasPresent bool) {
 	var index, curSeq int
 	index, wasPresent, _ = rc.search(key, nil)
 	if !wasPresent {

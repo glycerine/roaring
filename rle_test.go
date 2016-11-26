@@ -198,7 +198,7 @@ func TestRleRunSearch32(t *testing.T) {
 			So(rc.cardinality(), ShouldEqual, 12)
 			So(rc.numIntervals(), ShouldEqual, 12)
 
-			rc.remove(UpperLimit32 - 1)
+			rc.removeKey(UpperLimit32 - 1)
 			p("after removing UpperLimit32-1: %v", rc)
 			So(rc.cardinality(), ShouldEqual, 11)
 			So(rc.numIntervals(), ShouldEqual, 11)
@@ -500,7 +500,7 @@ func TestRleRandomUnion32(t *testing.T) {
 				for i := 0; i < numDel; i++ {
 					r1 := rand.Intn(len(a))
 					goner := a[r1]
-					union.remove(goner)
+					union.removeKey(goner)
 					delete(hashu, int(goner))
 				}
 				// verify the same as in the hashu
@@ -664,8 +664,8 @@ func TestRleCoverageOddsAndEnds32(t *testing.T) {
 
 			// deleteAt / remove
 			rc3.Add(10)
-			rc3.remove(10)
-			rc3.remove(9)
+			rc3.removeKey(10)
+			rc3.removeKey(9)
 			So(rc3.cardinality(), ShouldEqual, 2)
 			rc3.Add(9)
 			rc3.Add(10)

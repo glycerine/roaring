@@ -18,6 +18,16 @@ func (b *bitmapContainer) writeTo(stream io.Writer) (int, error) {
 	return stream.Write(buf)
 }
 
+func (b *runContainer32) writeTo(stream io.Writer) (int, error) {
+	panic("TODO")
+	return 0, nil
+}
+
+func (b *runContainer16) writeTo(stream io.Writer) (int, error) {
+	panic("TODO")
+	return 0, nil
+}
+
 func (b *arrayContainer) readFrom(stream io.Reader) (int, error) {
 	buf := uint16SliceAsByteSlice(b.content)
 	return io.ReadFull(stream, buf)
@@ -26,6 +36,16 @@ func (b *arrayContainer) readFrom(stream io.Reader) (int, error) {
 func (b *bitmapContainer) readFrom(stream io.Reader) (int, error) {
 	buf := uint64SliceAsByteSlice(b.bitmap)
 	return io.ReadFull(stream, buf)
+}
+
+func (b *runContainer32) readFrom(stream io.Reader) (int, error) {
+	panic("TODO")
+	return 0, nil
+}
+
+func (b *runContainer16) readFrom(stream io.Reader) (int, error) {
+	panic("TODO")
+	return 0, nil
 }
 
 func uint64SliceAsByteSlice(slice []uint64) []byte {
