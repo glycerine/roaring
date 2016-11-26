@@ -44,20 +44,9 @@ import (
 	"unsafe"
 )
 
-// MaxUint32 is only used internally for the endx
-// value when UpperLimit32 is stored; users should
-// only ever store up to UpperLimit32.
-const MaxUint32 = 4294967295
-
-// UpperLimit32 is the largest
-// integer we can store in an RunContainer32. As
-// we need to reserve one value for the open
-// interval endpoint endx, this is MaxUint32 - 1.
-const UpperLimit32 = MaxUint32 - 1
-
-// RunContainer32 does run-length encoding of sets of
+// runContainer32 does run-length encoding of sets of
 // uint32 integers.
-type RunContainer32 struct {
+type runContainer32 struct {
 	iv   []interval32
 	card int
 
@@ -65,21 +54,7 @@ type RunContainer32 struct {
 	myOpts SearchOptions
 }
 
-// rleVerbose controls whether p() prints show up.
-// The testing package sets this based on
-// testing.Verbose().
-var rleVerbose bool
-
-// p is a shorthand for fmt.Printf with beginning and
-// trailing newlines. p() makes it easy
-// to add diagnostic print statements.
-func p(format string, args ...interface{}) {
-	if rleVerbose {
-		fmt.Printf("\n"+format+"\n", args...)
-	}
-}
-
-// interval32 is the internal to RunContainer32
+// interval32 is the internal to runContainer32
 // structure that maintains the individual [start, endx)
 // half-open intervals.
 type interval32 struct {
@@ -99,19 +74,19 @@ func (iv interval32) String() string {
 }
 
 // String produces a human viewable string of the contents.
-func (rc *RunContainer32) String() string {
+func (rc *runContainer32) String() string {
 	if len(rc.iv) == 0 {
-		return "RunContainer32{}"
+		return "runContainer32{}"
 	}
 	var s string
 	for j, p := range rc.iv {
 		s += fmt.Sprintf("%v:[%d, %d), ", j, p.start, p.endx)
 	}
-	return `RunContainer32{` + s + `}`
+	return `runContainer32{` + s + `}`
 }
 
 // And finds the intersection of rc and b.
-func (rc *RunContainer32) And(b *Bitmap) *Bitmap {
+func (rc *runContainer32) And(b *Bitmap) *Bitmap {
 	out := NewBitmap()
 	for _, p := range rc.iv {
 		for i := p.start; i < p.endx; i++ {
@@ -124,7 +99,7 @@ func (rc *RunContainer32) And(b *Bitmap) *Bitmap {
 }
 
 // Xor returns the exclusive-or of rc and b.
-func (rc *RunContainer32) Xor(b *Bitmap) *Bitmap {
+func (rc *runContainer32) Xor(b *Bitmap) *Bitmap {
 	out := b.Clone()
 	for _, p := range rc.iv {
 		for v := p.start; v < p.endx; v++ {
@@ -139,7 +114,7 @@ func (rc *RunContainer32) Xor(b *Bitmap) *Bitmap {
 }
 
 // Or returns the union of rc and b.
-func (rc *RunContainer32) Or(b *Bitmap) *Bitmap {
+func (rc *runContainer32) Or(b *Bitmap) *Bitmap {
 	out := b.Clone()
 	for _, p := range rc.iv {
 		for v := p.start; v < p.endx; v++ {
@@ -161,17 +136,17 @@ func (p uint32Slice) Less(i, j int) bool { return p[i] < p[j] }
 // Swap swaps elements i and j.
 func (p uint32Slice) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
 
-// NewRunContainer32FromVals makes a new container from vals.
+// newRunContainer32FromVals makes a new container from vals.
 //
 // For efficiency, vals should be sorted in ascending order.
 // Ideally vals should not contain duplicates, but we detect and
 // ignore them. If vals is already sorted in ascending order, then
 // pass alreadySorted = true. Otherwise, for !alreadySorted,
-// we will sort vals before creating a RunContainer32 of them.
+// we will sort vals before creating a runContainer32 of them.
 // We sort the original vals, so this will change what the
 // caller sees in vals as a side effect.
-func NewRunContainer32FromVals(alreadySorted bool, vals ...uint32) *RunContainer32 {
-	// keep this in sync with NewRunContainer32FromArray below
+func newRunContainer32FromVals(alreadySorted bool, vals ...uint32) *runContainer32 {
+	// keep this in sync with newRunContainer32FromArray below
 
 	if !alreadySorted {
 		sort.Sort(uint32Slice(vals))
@@ -198,7 +173,7 @@ func NewRunContainer32FromVals(alreadySorted bool, vals ...uint32) *RunContainer
 				actuallyAdded++
 			} else {
 				if cur < prev {
-					panic(fmt.Sprintf("NewRunContainer32FromVals sees "+
+					panic(fmt.Sprintf("newRunContainer32FromVals sees "+
 						"unsorted vals; vals[%v]=cur=%v < prev=%v. Sort your vals"+
 						" before calling us with alreadySorted == true.", i, cur, prev))
 				}
@@ -214,15 +189,15 @@ func NewRunContainer32FromVals(alreadySorted bool, vals ...uint32) *RunContainer
 		}
 		m = append(m, interval32{start: runstart, endx: runstart + 1 + runlen})
 	}
-	return &RunContainer32{iv: m, card: actuallyAdded}
+	return &runContainer32{iv: m, card: actuallyAdded}
 }
 
 //
-// NewRunContainer32FromArray populates a new
-// RunContainer32 from the contents of arr.
+// newRunContainer32FromArray populates a new
+// runContainer32 from the contents of arr.
 //
-func NewRunContainer32FromArray(arr *arrayContainer) *RunContainer32 {
-	// keep this in sync with NewRunContainer32FromVals above
+func newRunContainer32FromArray(arr *arrayContainer) *runContainer32 {
+	// keep this in sync with newRunContainer32FromVals above
 
 	n := arr.getCardinality()
 	actuallyAdded := 0
@@ -246,7 +221,7 @@ func NewRunContainer32FromArray(arr *arrayContainer) *RunContainer32 {
 				actuallyAdded++
 			} else {
 				if cur < prev {
-					panic(fmt.Sprintf("NewRunContainer32FromVals sees "+
+					panic(fmt.Sprintf("newRunContainer32FromVals sees "+
 						"unsorted vals; vals[%v]=cur=%v < prev=%v. Sort your vals"+
 						" before calling us with alreadySorted == true.", i, cur, prev))
 				}
@@ -262,7 +237,7 @@ func NewRunContainer32FromArray(arr *arrayContainer) *RunContainer32 {
 		}
 		m = append(m, interval32{start: runstart, endx: runstart + 1 + runlen})
 	}
-	return &RunContainer32{iv: m, card: actuallyAdded}
+	return &runContainer32{iv: m, card: actuallyAdded}
 }
 
 // Set adds the integers in vals to the set. Vals
@@ -272,10 +247,10 @@ func NewRunContainer32FromArray(arr *arrayContainer) *RunContainer32 {
 // view of vals).
 //
 // If you have a small number of additions to an already
-// big RunContainer32, calling Add() may be faster.
-func (rc *RunContainer32) Set(alreadySorted bool, vals ...uint32) {
+// big runContainer32, calling Add() may be faster.
+func (rc *runContainer32) Set(alreadySorted bool, vals ...uint32) {
 
-	rc2 := NewRunContainer32FromVals(alreadySorted, vals...)
+	rc2 := newRunContainer32FromVals(alreadySorted, vals...)
 	//p("Set: rc2 is %s", rc2)
 	un := rc.Union(rc2)
 	rc.iv = un.iv
@@ -286,7 +261,7 @@ func (rc *RunContainer32) Set(alreadySorted bool, vals ...uint32) {
 // a and b either overlap or they are
 // contiguous and so can be merged into
 // a single interval.
-func canMerge(a, b interval32) bool {
+func canMerge32(a, b interval32) bool {
 	if a.endx < b.start {
 		return false
 	}
@@ -298,7 +273,7 @@ func canMerge(a, b interval32) bool {
 // and b would contain an element (otherwise
 // it would be the empty set, and we return
 // false).
-func haveOverlap(a, b interval32) bool {
+func haveOverlap32(a, b interval32) bool {
 	if a.endx <= b.start {
 		return false
 	}
@@ -308,7 +283,7 @@ func haveOverlap(a, b interval32) bool {
 // mergeInterval32s joins a and b into a
 // new interval, and panics if it cannot.
 func mergeInterval32s(a, b interval32) (res interval32) {
-	if !canMerge(a, b) {
+	if !canMerge32(a, b) {
 		panic(fmt.Sprintf("cannot merge %#v and %#v", a, b))
 	}
 	if b.start < a.start {
@@ -328,7 +303,7 @@ func mergeInterval32s(a, b interval32) (res interval32) {
 // of a and b. The isEmpty flag will be true if
 // a and b were disjoint.
 func intersectInterval32s(a, b interval32) (res interval32, isEmpty bool) {
-	if !haveOverlap(a, b) {
+	if !haveOverlap32(a, b) {
 		isEmpty = true
 		return
 	}
@@ -345,9 +320,9 @@ func intersectInterval32s(a, b interval32) (res interval32, isEmpty bool) {
 	return
 }
 
-// Union merges two RunContainer32s, producing
-// a new RunContainer32 with the union of rc and b.
-func (rc *RunContainer32) Union(b *RunContainer32) *RunContainer32 {
+// Union merges two runContainer32s, producing
+// a new runContainer32 with the union of rc and b.
+func (rc *runContainer32) Union(b *runContainer32) *runContainer32 {
 
 	// rc is also known as 'a' here, but golint insisted we
 	// call it rc for consistency with the rest of the methods.
@@ -379,14 +354,14 @@ func (rc *RunContainer32) Union(b *RunContainer32) *RunContainer32 {
 		if mergedUsed {
 			//p("mergedUsed is true")
 			mergedUpdated := false
-			if canMerge(cura, merged) {
-				//p("canMerge(cura=%s, merged=%s) is true", cura, merged)
+			if canMerge32(cura, merged) {
+				//p("canMerge32(cura=%s, merged=%s) is true", cura, merged)
 				merged = mergeInterval32s(cura, merged)
 				na = rc.indexOfIntervalAtOrAfter(merged.endx, na+1)
 				mergedUpdated = true
 			}
-			if canMerge(curb, merged) {
-				//p("canMerge(curb=%s, merged=%s) is true", curb, merged)
+			if canMerge32(curb, merged) {
+				//p("canMerge32(curb=%s, merged=%s) is true", curb, merged)
 				merged = mergeInterval32s(curb, merged)
 				nb = b.indexOfIntervalAtOrAfter(merged.endx, nb+1)
 				mergedUpdated = true
@@ -402,7 +377,7 @@ func (rc *RunContainer32) Union(b *RunContainer32) *RunContainer32 {
 		} else {
 			//p("!mergedUsed")
 			// !mergedUsed
-			if !canMerge(cura, curb) {
+			if !canMerge32(cura, curb) {
 				if cura.start < curb.start {
 					//p("cura is before curb")
 					m = append(m, cura)
@@ -436,8 +411,8 @@ func (rc *RunContainer32) Union(b *RunContainer32) *RunContainer32 {
 		aAdds:
 			for na < alim {
 				cura = rc.iv[na]
-				if canMerge(cura, merged) {
-					//p("canMerge(cura=%s, merged=%s) is true. na=%v", cura, merged, na)
+				if canMerge32(cura, merged) {
+					//p("canMerge32(cura=%s, merged=%s) is true. na=%v", cura, merged, na)
 					merged = mergeInterval32s(cura, merged)
 					na = rc.indexOfIntervalAtOrAfter(merged.endx, na+1)
 				} else {
@@ -451,8 +426,8 @@ func (rc *RunContainer32) Union(b *RunContainer32) *RunContainer32 {
 		bAdds:
 			for nb < blim {
 				curb = b.iv[nb]
-				if canMerge(curb, merged) {
-					//p("canMerge(curb=%s, merged=%s) is true. nb=%v", curb, merged, nb)
+				if canMerge32(curb, merged) {
+					//p("canMerge32(curb=%s, merged=%s) is true. nb=%v", curb, merged, nb)
 					merged = mergeInterval32s(curb, merged)
 					nb = b.indexOfIntervalAtOrAfter(merged.endx, nb+1)
 				} else {
@@ -462,23 +437,23 @@ func (rc *RunContainer32) Union(b *RunContainer32) *RunContainer32 {
 
 		}
 
-		//p("mergedUsed==true, before adding merged=%s, m=%v", merged, sliceToString(m))
+		//p("mergedUsed==true, before adding merged=%s, m=%v", merged, sliceToString32(m))
 		m = append(m, merged)
-		//p("added mergedUsed, m=%v", sliceToString(m))
+		//p("added mergedUsed, m=%v", sliceToString32(m))
 	}
 	if na < alim {
-		//p("adding the rest of a.vi[na:] = %v", sliceToString(rc.iv[na:]))
+		//p("adding the rest of a.vi[na:] = %v", sliceToString32(rc.iv[na:]))
 		m = append(m, rc.iv[na:]...)
-		//p("after the rest of a.vi[na:] to m, now m = %v", sliceToString(m))
+		//p("after the rest of a.vi[na:] to m, now m = %v", sliceToString32(m))
 	}
 	if nb < blim {
-		//p("adding the rest of b.vi[nb:] = %v", sliceToString(b.iv[nb:]))
+		//p("adding the rest of b.vi[nb:] = %v", sliceToString32(b.iv[nb:]))
 		m = append(m, b.iv[nb:]...)
-		//p("after the rest of a.vi[nb:] to m, now m = %v", sliceToString(m))
+		//p("after the rest of a.vi[nb:] to m, now m = %v", sliceToString32(m))
 	}
 
-	//p("making res out of m = %v", sliceToString(m))
-	res := &RunContainer32{iv: m}
+	//p("making res out of m = %v", sliceToString32(m))
+	res := &runContainer32{iv: m}
 	//p("Union returning %s", res)
 	return res
 }
@@ -487,7 +462,7 @@ func (rc *RunContainer32) Union(b *RunContainer32) *RunContainer32 {
 // for already and panic, as this is dedicated to use
 // by Union() and that should always be the case when
 // Union calls.
-func (rc *RunContainer32) indexOfIntervalAtOrAfter(key uint32, startIndex int) int {
+func (rc *runContainer32) indexOfIntervalAtOrAfter(key uint32, startIndex int) int {
 	rc.myOpts.StartIndex = startIndex
 	rc.myOpts.EndxIndex = 0
 
@@ -498,21 +473,21 @@ func (rc *RunContainer32) indexOfIntervalAtOrAfter(key uint32, startIndex int) i
 	return w + 1
 }
 
-// Intersect returns a new RunContainer32 holding the
+// Intersect returns a new runContainer32 holding the
 // intersection of rc (also known as 'a')  and b.
-func (rc *RunContainer32) Intersect(b *RunContainer32) *RunContainer32 {
+func (rc *runContainer32) Intersect(b *runContainer32) *runContainer32 {
 
 	a := rc
 	numa := len(a.iv)
 	numb := len(b.iv)
-	res := &RunContainer32{}
+	res := &runContainer32{}
 	if numa == 0 || numb == 0 {
 		//p("intersection is empty, returning early")
 		return res
 	}
 
 	if numa == 1 && numb == 1 {
-		if !haveOverlap(a.iv[0], b.iv[0]) {
+		if !haveOverlap32(a.iv[0], b.iv[0]) {
 			//p("intersection is empty, returning early")
 			return res
 		}
@@ -629,30 +604,14 @@ toploop:
 }
 
 // Get returns true iff key is in the container.
-func (rc *RunContainer32) Get(key uint32) bool {
+func (rc *runContainer32) Get(key uint32) bool {
 	_, in, _ := rc.Search(key, nil)
 	return in
 }
 
 // NumIntervals returns the count of intervals in the container.
-func (rc *RunContainer32) NumIntervals() int {
+func (rc *runContainer32) NumIntervals() int {
 	return len(rc.iv)
-}
-
-// SearchOptions allows us to accelerate RunContainer32.Search with
-// prior knowledge of (mostly lower) bounds. This is used by Union
-// and Intersect.
-type SearchOptions struct {
-
-	// start here instead of at 0
-	StartIndex int
-
-	// upper bound instead of len(rc.iv);
-	// EndxIndex == 0 means ignore the bound and use
-	// EndxIndex == n ==len(rc.iv) which is also
-	// naturally the default for Search()
-	// when opt = nil.
-	EndxIndex int
 }
 
 // Search returns alreadyPresent to indicate if the
@@ -677,12 +636,12 @@ type SearchOptions struct {
 //     (Note that whichInterval32+1 won't exist when
 //     whichInterval32 is the last interval.)
 //
-// RunContainer32.Search always returns whichInterval32 < len(rc.iv).
+// runContainer32.Search always returns whichInterval32 < len(rc.iv).
 //
 // If not nil, opts can be used to further restrict
 // the search space.
 //
-func (rc *RunContainer32) Search(key uint32, opts *SearchOptions) (whichInterval32 int, alreadyPresent bool, numCompares int) {
+func (rc *runContainer32) Search(key uint32, opts *SearchOptions) (whichInterval32 int, alreadyPresent bool, numCompares int) {
 
 	n := len(rc.iv)
 	if n == 0 {
@@ -769,8 +728,8 @@ func (rc *RunContainer32) Search(key uint32, opts *SearchOptions) (whichInterval
 }
 
 // Cardinality returns the count of the integers stored in the
-// RunContainer32.
-func (rc *RunContainer32) Cardinality() int {
+// runContainer32.
+func (rc *runContainer32) Cardinality() int {
 	if len(rc.iv) == 0 {
 		rc.card = 0
 		return 0
@@ -788,7 +747,7 @@ func (rc *RunContainer32) Cardinality() int {
 }
 
 // AsSlice decompresses the contents into a []uint32 slice.
-func (rc *RunContainer32) AsSlice() []uint32 {
+func (rc *runContainer32) AsSlice() []uint32 {
 	s := make([]uint32, rc.Cardinality())
 	j := 0
 	for _, p := range rc.iv {
@@ -800,51 +759,51 @@ func (rc *RunContainer32) AsSlice() []uint32 {
 	return s
 }
 
-// NewRunContainer32 creates an empty run container.
-func NewRunContainer32() *RunContainer32 {
-	return &RunContainer32{}
+// newRunContainer32 creates an empty run container.
+func newRunContainer32() *runContainer32 {
+	return &runContainer32{}
 }
 
-// NewRunContainer32CopyIv creates a run container, initializing
+// newRunContainer32CopyIv creates a run container, initializing
 // with a copy of the supplied iv slice.
 //
-func NewRunContainer32CopyIv(iv []interval32) *RunContainer32 {
-	rc := &RunContainer32{
+func newRunContainer32CopyIv(iv []interval32) *runContainer32 {
+	rc := &runContainer32{
 		iv: make([]interval32, len(iv)),
 	}
 	copy(rc.iv, iv)
 	return rc
 }
 
-// NewRunContainer32TakeOwnership returns a new RunContainer32
+// newRunContainer32TakeOwnership returns a new runContainer32
 // backed by the provided iv slice, which we will
 // assume exclusive control over from now on.
 //
-func NewRunContainer32TakeOwnership(iv []interval32) *RunContainer32 {
-	rc := &RunContainer32{
+func newRunContainer32TakeOwnership(iv []interval32) *runContainer32 {
+	rc := &runContainer32{
 		iv: iv,
 	}
 	return rc
 }
 
-const baseRc32Size = int(unsafe.Sizeof(RunContainer32{}))
+const baseRc32Size = int(unsafe.Sizeof(runContainer32{}))
 const perIntervalRc32Size = int(unsafe.Sizeof(interval32{}))
 
-// RunContainer32SerializedSizeInBytes returns the number of bytes of memory
-// required to hold numRuns in a RunContainer32.
-func RunContainer32SerializedSizeInBytes(numRuns int) int {
+// runContainer32SerializedSizeInBytes returns the number of bytes of memory
+// required to hold numRuns in a runContainer32.
+func runContainer32SerializedSizeInBytes(numRuns int) int {
 	return baseRc32Size + perIntervalRc32Size*numRuns
 }
 
-// SerializedSizeInBytes returns the number of bytes of memory
-// required by this RunContainer32.
-func (rc *RunContainer32) SerializedSizeInBytes() int {
+// serializedSizeInBytes returns the number of bytes of memory
+// required by this runContainer32.
+func (rc *runContainer32) serializedSizeInBytes() int {
 	return baseRc32Size + perIntervalRc32Size*rc.Cardinality()
 }
 
 // Add adds a single value k to the set.
-func (rc *RunContainer32) Add(k uint32) {
-	// TODO comment from RunContainer32.java:
+func (rc *runContainer32) Add(k uint32) {
+	// TODO comment from runContainer32.java:
 	// it might be better and simpler to do return
 	// toBitmapOrArrayContainer(getCardinality()).add(k)
 	// but note that some unit tests use this method to build up test
@@ -923,14 +882,14 @@ func (rc *RunContainer32) Add(k uint32) {
 // before calling Cur(); and you should call HasNext()
 // before calling Next() to insure there are contents.
 type RunIterator32 struct {
-	rc            *RunContainer32
+	rc            *runContainer32
 	curIndex      int
 	curPosInIndex uint32
 	curSeq        int
 }
 
 // NewRunIterator32 returns a new empty run container.
-func (rc *RunContainer32) NewRunIterator32() *RunIterator32 {
+func (rc *runContainer32) NewRunIterator32() *RunIterator32 {
 	return &RunIterator32{rc: rc, curIndex: -1}
 }
 
@@ -985,7 +944,7 @@ func (ri *RunIterator32) Next() uint32 {
 func (ri *RunIterator32) Remove() uint32 {
 	n := ri.rc.Cardinality()
 	if n == 0 {
-		panic("RunIterator.Remove called on empty RunContainer32")
+		panic("RunIterator.Remove called on empty runContainer32")
 	}
 	cur := ri.Cur()
 
@@ -994,7 +953,7 @@ func (ri *RunIterator32) Remove() uint32 {
 }
 
 // Remove removes key from the container.
-func (rc *RunContainer32) Remove(key uint32) (wasPresent bool) {
+func (rc *runContainer32) Remove(key uint32) (wasPresent bool) {
 	var index, curSeq int
 	index, wasPresent, _ = rc.Search(key, nil)
 	if !wasPresent {
@@ -1007,7 +966,7 @@ func (rc *RunContainer32) Remove(key uint32) (wasPresent bool) {
 
 // internal helper functions
 
-func (rc *RunContainer32) deleteAt(curIndex *int, curPosInIndex *uint32, curSeq *int) {
+func (rc *runContainer32) deleteAt(curIndex *int, curPosInIndex *uint32, curSeq *int) {
 	rc.card--
 	(*curSeq)--
 	ci := *curIndex
@@ -1058,7 +1017,7 @@ func (rc *RunContainer32) deleteAt(curIndex *int, curPosInIndex *uint32, curSeq 
 
 }
 
-func haveOverlap4(astart, aendx, bstart, bendx uint32) bool {
+func have4Overlap32(astart, aendx, bstart, bendx uint32) bool {
 	if aendx <= bstart {
 		return false
 	}
@@ -1066,7 +1025,7 @@ func haveOverlap4(astart, aendx, bstart, bendx uint32) bool {
 }
 
 func intersectWithLeftover(astart, aendx, bstart, bendx uint32) (isOverlap, isLeftoverA, isLeftoverB bool, leftoverStart uint32, intersection interval32) {
-	if !haveOverlap4(astart, aendx, bstart, bendx) {
+	if !have4Overlap32(astart, aendx, bstart, bendx) {
 		return
 	}
 	isOverlap = true
@@ -1094,7 +1053,7 @@ func intersectWithLeftover(astart, aendx, bstart, bendx uint32) (isOverlap, isLe
 	return
 }
 
-func (rc *RunContainer32) findNextIntervalThatIntersectsStartingFrom(startIndex int, key uint32) (index int, done bool) {
+func (rc *runContainer32) findNextIntervalThatIntersectsStartingFrom(startIndex int, key uint32) (index int, done bool) {
 
 	rc.myOpts.StartIndex = startIndex
 	rc.myOpts.EndxIndex = 0
@@ -1114,7 +1073,7 @@ func (rc *RunContainer32) findNextIntervalThatIntersectsStartingFrom(startIndex 
 	return w, false
 }
 
-func sliceToString(m []interval32) string {
+func sliceToString32(m []interval32) string {
 	s := ""
 	for i := range m {
 		s += fmt.Sprintf("%v: %s, ", i, m[i])
