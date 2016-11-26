@@ -49,14 +49,14 @@ const UpperLimit16 = MaxUint16 - 1
 type searchOptions struct {
 
 	// start here instead of at 0
-	StartIndex int
+	StartIndex int64
 
 	// upper bound instead of len(rc.iv);
 	// EndxIndex == 0 means ignore the bound and use
 	// EndxIndex == n ==len(rc.iv) which is also
 	// naturally the default for search()
 	// when opt = nil.
-	EndxIndex int
+	EndxIndex int64
 }
 
 // And finds the intersection of rc and b.

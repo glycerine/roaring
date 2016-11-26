@@ -50,29 +50,27 @@ type runContainer32 struct {
 	iv   []interval32
 	card int64
 
-	hasMaxUint32 int64 // 1 for yes, 0 for no. easy to add with len(rc.iv).
-
 	// avoid allocation during search
 	myOpts searchOptions
 }
 
 // interval32 is the internal to runContainer32
-// structure that maintains the individual [start, endx)
-// half-open intervals.
+// structure that maintains the individual [start, last]
+// closed intervals.
 type interval32 struct {
 	start uint32
-	endx  uint32
+	last  uint32
 }
 
-// runlen returns iv.endx - iv.start, i.e. a
-// count of integers in the [start, endx) half-open interval.
+// runlen returns 1 + iv.last - iv.start, i.e. the
+// count of integers in the interval.
 func (iv interval32) runlen() uint32 {
-	return iv.endx - iv.start
+	return 1 + iv.last - iv.start
 }
 
 // String produces a human viewable string of the contents.
 func (iv interval32) String() string {
-	return fmt.Sprintf("[%d, %d)", iv.start, iv.endx)
+	return fmt.Sprintf("[%d, %d]", iv.start, iv.last)
 }
 
 // String produces a human viewable string of the contents.
@@ -84,11 +82,7 @@ func (rc *runContainer32) String() string {
 	var j int
 	var p interval32
 	for j, p = range rc.iv {
-		s += fmt.Sprintf("%v:[%d, %d), ", j, p.start, p.endx)
-	}
-	j++
-	if rc.hasMaxUint32 == 1 {
-		s += fmt.Sprintf("and MaxUint32(%v)", MaxUint32)
+		s += fmt.Sprintf("%v:[%d, %d], ", j, p.start, p.last)
 	}
 	return `runContainer32{` + s + `}`
 }
@@ -115,14 +109,7 @@ type addHelper struct {
 }
 
 func (ah *addHelper) storeIval(runstart, runlen uint32) {
-	mi := interval32{start: runstart, endx: runstart + 1 + runlen}
-	// check for overflow at MaxUint32
-	p("mi.endx-mi.start = %v; mi.endx=%v  mi.start=%v", mi.endx-mi.start, mi.endx, mi.start)
-	if mi.endx == 0 {
-		p("overflow detected")
-		ah.rc.hasMaxUint32 = 1
-		mi.endx = runstart + runlen
-	}
+	mi := interval32{start: runstart, last: runstart + runlen}
 	ah.m = append(ah.m, mi)
 }
 
@@ -171,7 +158,7 @@ func newRunContainer32FromVals(alreadySorted bool, vals ...uint32) *runContainer
 	case n == 0:
 		// nothing more
 	case n == 1:
-		ah.m = append(ah.m, interval32{start: vals[0], endx: vals[0] + 1})
+		ah.m = append(ah.m, interval32{start: vals[0], last: vals[0]})
 		ah.actuallyAdded++
 	default:
 		ah.runstart = vals[0]
@@ -185,9 +172,6 @@ func newRunContainer32FromVals(alreadySorted bool, vals ...uint32) *runContainer
 	}
 	rc.iv = ah.m
 	rc.card = int64(ah.actuallyAdded)
-	p("acctuallyAdded = %v", ah.actuallyAdded)
-	p("rc = %v", rc)
-	p("rc.cardinality = %v", rc.cardinality())
 	return rc
 }
 
@@ -207,7 +191,7 @@ func newRunContainer32FromArray(arr *arrayContainer) *runContainer32 {
 	case n == 0:
 		// nothing more
 	case n == 1:
-		ah.m = append(ah.m, interval32{start: uint32(arr.content[0]), endx: uint32(arr.content[0]) + 1})
+		ah.m = append(ah.m, interval32{start: uint32(arr.content[0]), last: uint32(arr.content[0])})
 		ah.actuallyAdded++
 	default:
 		ah.runstart = uint32(arr.content[0])
@@ -239,9 +223,6 @@ func (rc *runContainer32) set(alreadySorted bool, vals ...uint32) {
 	un := rc.union(rc2)
 	rc.iv = un.iv
 	rc.card = 0
-	if rc.hasMaxUint32 == 1 || rc2.hasMaxUint32 == 1 {
-		rc.hasMaxUint32 = 1
-	}
 }
 
 // canMerge returns true iff the intervals
@@ -249,10 +230,10 @@ func (rc *runContainer32) set(alreadySorted bool, vals ...uint32) {
 // contiguous and so can be merged into
 // a single interval.
 func canMerge32(a, b interval32) bool {
-	if a.endx < b.start {
+	if int64(a.last) < int64(b.start)-1 {
 		return false
 	}
-	return b.endx >= a.start
+	return int64(b.last) >= int64(a.start)-1
 }
 
 // haveOverlap differs from canMerge in that
@@ -261,10 +242,10 @@ func canMerge32(a, b interval32) bool {
 // it would be the empty set, and we return
 // false).
 func haveOverlap32(a, b interval32) bool {
-	if a.endx <= b.start {
+	if int64(a.last)+1 <= int64(b.start) {
 		return false
 	}
-	return b.endx > a.start
+	return int64(b.last)+1 > int64(a.start)
 }
 
 // mergeInterval32s joins a and b into a
@@ -278,10 +259,10 @@ func mergeInterval32s(a, b interval32) (res interval32) {
 	} else {
 		res.start = a.start
 	}
-	if b.endx > a.endx {
-		res.endx = b.endx
+	if b.last > a.last {
+		res.last = b.last
 	} else {
-		res.endx = a.endx
+		res.last = a.last
 	}
 	return
 }
@@ -299,10 +280,10 @@ func intersectInterval32s(a, b interval32) (res interval32, isEmpty bool) {
 	} else {
 		res.start = a.start
 	}
-	if b.endx < a.endx {
-		res.endx = b.endx
+	if b.last < a.last {
+		res.last = b.last
 	} else {
-		res.endx = a.endx
+		res.last = a.last
 	}
 	return
 }
@@ -344,13 +325,13 @@ func (rc *runContainer32) union(b *runContainer32) *runContainer32 {
 			if canMerge32(cura, merged) {
 				//p("canMerge32(cura=%s, merged=%s) is true", cura, merged)
 				merged = mergeInterval32s(cura, merged)
-				na = rc.indexOfIntervalAtOrAfter(merged.endx, na+1)
+				na = rc.indexOfIntervalAtOrAfter(int64(merged.last)+1, na+1)
 				mergedUpdated = true
 			}
 			if canMerge32(curb, merged) {
 				//p("canMerge32(curb=%s, merged=%s) is true", curb, merged)
 				merged = mergeInterval32s(curb, merged)
-				nb = b.indexOfIntervalAtOrAfter(merged.endx, nb+1)
+				nb = b.indexOfIntervalAtOrAfter(int64(merged.last)+1, nb+1)
 				mergedUpdated = true
 			}
 			if !mergedUpdated {
@@ -378,8 +359,8 @@ func (rc *runContainer32) union(b *runContainer32) *runContainer32 {
 				//p("intervals are not disjoint, we can merge them. cura=%s, curb=%s", cura, curb)
 				merged = mergeInterval32s(cura, curb)
 				mergedUsed = true
-				na = rc.indexOfIntervalAtOrAfter(merged.endx, na+1)
-				nb = b.indexOfIntervalAtOrAfter(merged.endx, nb+1)
+				na = rc.indexOfIntervalAtOrAfter(int64(merged.last)+1, na+1)
+				nb = b.indexOfIntervalAtOrAfter(int64(merged.last)+1, nb+1)
 			}
 		}
 	}
@@ -401,7 +382,7 @@ func (rc *runContainer32) union(b *runContainer32) *runContainer32 {
 				if canMerge32(cura, merged) {
 					//p("canMerge32(cura=%s, merged=%s) is true. na=%v", cura, merged, na)
 					merged = mergeInterval32s(cura, merged)
-					na = rc.indexOfIntervalAtOrAfter(merged.endx, na+1)
+					na = rc.indexOfIntervalAtOrAfter(int64(merged.last)+1, na+1)
 				} else {
 					break aAdds
 				}
@@ -416,7 +397,7 @@ func (rc *runContainer32) union(b *runContainer32) *runContainer32 {
 				if canMerge32(curb, merged) {
 					//p("canMerge32(curb=%s, merged=%s) is true. nb=%v", curb, merged, nb)
 					merged = mergeInterval32s(curb, merged)
-					nb = b.indexOfIntervalAtOrAfter(merged.endx, nb+1)
+					nb = b.indexOfIntervalAtOrAfter(int64(merged.last)+1, nb+1)
 				} else {
 					break bAdds
 				}
@@ -445,11 +426,8 @@ func (rc *runContainer32) union(b *runContainer32) *runContainer32 {
 	return res
 }
 
-// indexOfIntervalAtOrAfter is a helper for union. We check
-// for already and panic, as this is dedicated to use
-// by union() and that should always be the case when
-// union calls.
-func (rc *runContainer32) indexOfIntervalAtOrAfter(key uint32, startIndex int) int {
+// indexOfIntervalAtOrAfter is a helper for union.
+func (rc *runContainer32) indexOfIntervalAtOrAfter(key int64, startIndex int64) int {
 	rc.myOpts.StartIndex = startIndex
 	rc.myOpts.EndxIndex = 0
 
@@ -485,8 +463,8 @@ func (rc *runContainer32) intersect(b *runContainer32) *runContainer32 {
 	acuri := 0
 	bcuri := 0
 
-	astart := a.iv[acuri].start
-	bstart := b.iv[bcuri].start
+	astart := int64(a.iv[acuri].start)
+	bstart := int64(b.iv[bcuri].start)
 
 	var intersection interval32
 	var leftoverStart uint32
@@ -498,7 +476,7 @@ toploop:
 		//p("============     top of loop, pass = %v", pass)
 		pass++
 
-		isOverlap, isLeftoverA, isLeftoverB, leftoverStart, intersection = intersectWithLeftover32(astart, a.iv[acuri].endx, bstart, b.iv[bcuri].endx)
+		isOverlap, isLeftoverA, isLeftoverB, leftoverStart, intersection = intersectWithLeftover32(astart, int64(a.iv[acuri].last)+1, bstart, int64(b.iv[bcuri].last)+1)
 
 		//p("acuri=%v, astart=%v, a.iv[acuri].endx=%v,   bcuri=%v, bstart=%v, b.iv[bcuri].endx=%v, isOverlap=%v, isLeftoverA=%v, isLeftoverB=%v, leftoverStart=%v, intersection = %#v", acuri, astart, a.iv[acuri].endx, bcuri, bstart, b.iv[bcuri].endx, isOverlap, isLeftoverA, isLeftoverB, leftoverStart, intersection)
 
@@ -628,19 +606,14 @@ func (rc *runContainer32) numIntervals() int {
 // If not nil, opts can be used to further restrict
 // the search space.
 //
-func (rc *runContainer32) search(key uint32, opts *searchOptions) (whichInterval32 int, alreadyPresent bool, numCompares int) {
-	if key == MaxUint32 {
-		// have to special case handling MaxUint32
-		return -1, rc.hasMaxUint32 == 1, 1
-	}
-
+func (rc *runContainer32) search(key int64, opts *searchOptions) (whichInterval32 int, alreadyPresent bool, numCompares int) {
 	n := len(rc.iv)
 	if n == 0 {
 		return -1, false, 0
 	}
 
-	startIndex := 0
-	endxIndex := n
+	startIndex := int64(0)
+	endxIndex := int64(n)
 	if opts != nil {
 		startIndex = opts.StartIndex
 
@@ -1014,14 +987,14 @@ func (rc *runContainer32) deleteAt(curIndex *int, curPosInIndex *uint32, curSeq 
 
 }
 
-func have4Overlap32(astart, aendx, bstart, bendx uint32) bool {
+func have4Overlap32(astart, aendx, bstart, bendx int64) bool {
 	if aendx <= bstart {
 		return false
 	}
 	return bendx > astart
 }
 
-func intersectWithLeftover32(astart, aendx, bstart, bendx uint32) (isOverlap, isLeftoverA, isLeftoverB bool, leftoverStart uint32, intersection interval32) {
+func intersectWithLeftover32(astart, aendx, bstart, bendx int64) (isOverlap, isLeftoverA, isLeftoverB bool, leftoverStart uint32, intersection interval32) {
 	if !have4Overlap32(astart, aendx, bstart, bendx) {
 		return
 	}
