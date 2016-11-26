@@ -48,7 +48,9 @@ import (
 // uint32 integers.
 type runContainer32 struct {
 	iv   []interval32
-	card int
+	card int64
+
+	hasMaxUint32 int64 // 1 for yes, 0 for no. easy to add with len(rc.iv).
 
 	// avoid allocation during search
 	myOpts searchOptions
@@ -79,8 +81,14 @@ func (rc *runContainer32) String() string {
 		return "runContainer32{}"
 	}
 	var s string
-	for j, p := range rc.iv {
+	var j int
+	var p interval32
+	for j, p = range rc.iv {
 		s += fmt.Sprintf("%v:[%d, %d), ", j, p.start, p.endx)
+	}
+	j++
+	if rc.hasMaxUint32 == 1 {
+		s += fmt.Sprintf("and MaxUint32(%v)", MaxUint32)
 	}
 	return `runContainer32{` + s + `}`
 }
@@ -97,6 +105,48 @@ func (p uint32Slice) Less(i, j int) bool { return p[i] < p[j] }
 // Swap swaps elements i and j.
 func (p uint32Slice) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
 
+// addHelper helps build a runContainer
+type addHelper struct {
+	runstart      uint32
+	runlen        uint32
+	actuallyAdded uint32
+	m             []interval32
+	rc            *runContainer32
+}
+
+func (ah *addHelper) storeIval(runstart, runlen uint32) {
+	mi := interval32{start: runstart, endx: runstart + 1 + runlen}
+	// check for overflow at MaxUint32
+	p("mi.endx-mi.start = %v; mi.endx=%v  mi.start=%v", mi.endx-mi.start, mi.endx, mi.start)
+	if mi.endx == 0 {
+		p("overflow detected")
+		ah.rc.hasMaxUint32 = 1
+		mi.endx = runstart + runlen
+	}
+	ah.m = append(ah.m, mi)
+}
+
+func (ah *addHelper) add(cur, prev uint32, i int) {
+	if cur == prev+1 {
+		ah.runlen++
+		ah.actuallyAdded++
+	} else {
+		if cur < prev {
+			panic(fmt.Sprintf("newRunContainer32FromVals sees "+
+				"unsorted vals; vals[%v]=cur=%v < prev=%v. Sort your vals"+
+				" before calling us with alreadySorted == true.", i, cur, prev))
+		}
+		if cur == prev {
+			// ignore duplicates
+		} else {
+			ah.actuallyAdded++
+			ah.storeIval(ah.runstart, ah.runlen)
+			ah.runstart = cur
+			ah.runlen = 0
+		}
+	}
+}
+
 // newRunContainer32FromVals makes a new container from vals.
 //
 // For efficiency, vals should be sorted in ascending order.
@@ -109,48 +159,36 @@ func (p uint32Slice) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
 func newRunContainer32FromVals(alreadySorted bool, vals ...uint32) *runContainer32 {
 	// keep this in sync with newRunContainer32FromArray below
 
+	rc := &runContainer32{}
+	ah := addHelper{rc: rc}
+
 	if !alreadySorted {
 		sort.Sort(uint32Slice(vals))
 	}
-	var m []interval32
 	n := len(vals)
-	actuallyAdded := 0
 	var cur, prev uint32
 	switch {
 	case n == 0:
 		// nothing more
 	case n == 1:
-		m = append(m, interval32{start: vals[0], endx: vals[0] + 1})
-		actuallyAdded++
+		ah.m = append(ah.m, interval32{start: vals[0], endx: vals[0] + 1})
+		ah.actuallyAdded++
 	default:
-		runstart := vals[0]
-		actuallyAdded++
-		var runlen uint32
+		ah.runstart = vals[0]
+		ah.actuallyAdded++
 		for i := 1; i < n; i++ {
 			prev = vals[i-1]
 			cur = vals[i]
-			if cur == prev+1 {
-				runlen++
-				actuallyAdded++
-			} else {
-				if cur < prev {
-					panic(fmt.Sprintf("newRunContainer32FromVals sees "+
-						"unsorted vals; vals[%v]=cur=%v < prev=%v. Sort your vals"+
-						" before calling us with alreadySorted == true.", i, cur, prev))
-				}
-				if cur == prev {
-					// ignore duplicates
-				} else {
-					actuallyAdded++
-					m = append(m, interval32{start: runstart, endx: runstart + 1 + runlen})
-					runstart = cur
-					runlen = 0
-				}
-			}
+			ah.add(cur, prev, i)
 		}
-		m = append(m, interval32{start: runstart, endx: runstart + 1 + runlen})
+		ah.storeIval(ah.runstart, ah.runlen)
 	}
-	return &runContainer32{iv: m, card: actuallyAdded}
+	rc.iv = ah.m
+	rc.card = int64(ah.actuallyAdded)
+	p("acctuallyAdded = %v", ah.actuallyAdded)
+	p("rc = %v", rc)
+	p("rc.cardinality = %v", rc.cardinality())
+	return rc
 }
 
 //
@@ -160,45 +198,30 @@ func newRunContainer32FromVals(alreadySorted bool, vals ...uint32) *runContainer
 func newRunContainer32FromArray(arr *arrayContainer) *runContainer32 {
 	// keep this in sync with newRunContainer32FromVals above
 
+	rc := &runContainer32{}
+	ah := addHelper{rc: rc}
+
 	n := arr.getCardinality()
-	actuallyAdded := 0
-	var m []interval32
 	var cur, prev uint32
 	switch {
 	case n == 0:
 		// nothing more
 	case n == 1:
-		m = append(m, interval32{start: uint32(arr.content[0]), endx: uint32(arr.content[0]) + 1})
-		actuallyAdded++
+		ah.m = append(ah.m, interval32{start: uint32(arr.content[0]), endx: uint32(arr.content[0]) + 1})
+		ah.actuallyAdded++
 	default:
-		runstart := uint32(arr.content[0])
-		actuallyAdded++
-		var runlen uint32
+		ah.runstart = uint32(arr.content[0])
+		ah.actuallyAdded++
 		for i := 1; i < n; i++ {
 			prev = uint32(arr.content[i-1])
 			cur = uint32(arr.content[i])
-			if cur == prev+1 {
-				runlen++
-				actuallyAdded++
-			} else {
-				if cur < prev {
-					panic(fmt.Sprintf("newRunContainer32FromVals sees "+
-						"unsorted vals; vals[%v]=cur=%v < prev=%v. Sort your vals"+
-						" before calling us with alreadySorted == true.", i, cur, prev))
-				}
-				if cur == prev {
-					//p("ignore duplicates")
-				} else {
-					actuallyAdded++
-					m = append(m, interval32{start: runstart, endx: runstart + 1 + runlen})
-					runstart = cur
-					runlen = 0
-				}
-			}
+			ah.add(cur, prev, i)
 		}
-		m = append(m, interval32{start: runstart, endx: runstart + 1 + runlen})
+		ah.storeIval(ah.runstart, ah.runlen)
 	}
-	return &runContainer32{iv: m, card: actuallyAdded}
+	rc.iv = ah.m
+	rc.card = int64(ah.actuallyAdded)
+	return rc
 }
 
 // set adds the integers in vals to the set. Vals
@@ -212,10 +235,13 @@ func newRunContainer32FromArray(arr *arrayContainer) *runContainer32 {
 func (rc *runContainer32) set(alreadySorted bool, vals ...uint32) {
 
 	rc2 := newRunContainer32FromVals(alreadySorted, vals...)
-	//p("set: rc2 is %s", rc2)
+	p("set: rc2 is %s", rc2)
 	un := rc.union(rc2)
 	rc.iv = un.iv
 	rc.card = 0
+	if rc.hasMaxUint32 == 1 || rc2.hasMaxUint32 == 1 {
+		rc.hasMaxUint32 = 1
+	}
 }
 
 // canMerge returns true iff the intervals
@@ -603,6 +629,10 @@ func (rc *runContainer32) numIntervals() int {
 // the search space.
 //
 func (rc *runContainer32) search(key uint32, opts *searchOptions) (whichInterval32 int, alreadyPresent bool, numCompares int) {
+	if key == MaxUint32 {
+		// have to special case handling MaxUint32
+		return -1, rc.hasMaxUint32 == 1, 1
+	}
 
 	n := len(rc.iv)
 	if n == 0 {
@@ -690,18 +720,18 @@ func (rc *runContainer32) search(key uint32, opts *searchOptions) (whichInterval
 
 // cardinality returns the count of the integers stored in the
 // runContainer32.
-func (rc *runContainer32) cardinality() int {
+func (rc *runContainer32) cardinality() int64 {
 	if len(rc.iv) == 0 {
-		rc.card = 0
-		return 0
+		rc.card = rc.hasMaxUint32
+		return rc.card
 	}
 	if rc.card > 0 {
 		return rc.card // already cached
 	}
 	// have to compute it
-	n := 0
+	n := rc.hasMaxUint32
 	for _, p := range rc.iv {
-		n += int(p.runlen())
+		n += int64(p.runlen())
 	}
 	rc.card = n // cache it
 	return n
@@ -763,7 +793,13 @@ func (rc *runContainer32) Add(k uint32) {
 	// toBitmapOrArrayContainer(getCardinality()).add(k)
 	// but note that some unit tests use this method to build up test
 	// runcontainers without calling runOptimize
+
+	if k == MaxUint32 {
+		rc.hasMaxUint32 = 1
+	}
+
 	index, present, _ := rc.search(k, nil)
+	p("search returned index=%v, present=%v", index, present)
 	if present {
 		return // already there
 	}
@@ -840,7 +876,7 @@ type RunIterator32 struct {
 	rc            *runContainer32
 	curIndex      int
 	curPosInIndex uint32
-	curSeq        int
+	curSeq        int64
 }
 
 // NewRunIterator32 returns a new empty run container.
@@ -909,7 +945,13 @@ func (ri *RunIterator32) Remove() uint32 {
 
 // remove removes key from the container.
 func (rc *runContainer32) removeKey(key uint32) (wasPresent bool) {
-	var index, curSeq int
+	if key == MaxUint32 {
+		wasPresent = (rc.hasMaxUint32 == 1)
+		rc.hasMaxUint32 = 0
+		return
+	}
+	var index int
+	var curSeq int64
 	index, wasPresent, _ = rc.search(key, nil)
 	if !wasPresent {
 		return // already removed, nothing to do.
@@ -921,7 +963,7 @@ func (rc *runContainer32) removeKey(key uint32) (wasPresent bool) {
 
 // internal helper functions
 
-func (rc *runContainer32) deleteAt(curIndex *int, curPosInIndex *uint32, curSeq *int) {
+func (rc *runContainer32) deleteAt(curIndex *int, curPosInIndex *uint32, curSeq *int64) {
 	rc.card--
 	(*curSeq)--
 	ci := *curIndex

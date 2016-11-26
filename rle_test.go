@@ -102,7 +102,7 @@ func TestRleRunIterator32(t *testing.T) {
 			rc := newRunContainer32TakeOwnership([]interval32{{start: 4, endx: 10}})
 			card := rc.cardinality()
 			So(card, ShouldEqual, 6)
-			So(rc.serializedSizeInBytes(), ShouldEqual, int(unsafe.Sizeof(interval32{}))*card)
+			So(rc.serializedSizeInBytes(), ShouldEqual, int(unsafe.Sizeof(interval32{}))*int(card))
 
 			it := rc.NewRunIterator32()
 			So(it.HasNext(), ShouldBeTrue)
@@ -682,5 +682,30 @@ func TestRleCoverageOddsAndEnds32(t *testing.T) {
 			//p("after Remove of 10, rc3 = %v", rc3) // 5, 6, 9, 12
 			So(it3.Next(), ShouldEqual, uint32(12))
 		}
+	})
+}
+
+func TestRleStoringMax32(t *testing.T) {
+
+	Convey("Storing the MaxUint32 should be possible, because it may be necessary to do so--users will assume that any valid uint32 should be storable. The runContainer will just have to special case this by storing an rc.hasMaxUint32 flag, and knowing that this value needs its own special case to work.", t, func() {
+
+		rleVerbose = true
+		rc := newRunContainer32()
+		rc.Add(MaxUint32)
+		So(rc.get(MaxUint32), ShouldBeTrue)
+		So(rc.cardinality(), ShouldEqual, 1)
+		rc.removeKey(MaxUint32)
+		So(rc.get(MaxUint32), ShouldBeFalse)
+		So(rc.cardinality(), ShouldEqual, 0)
+
+		rc.set(false, MaxUint32-1, MaxUint32)
+		So(rc.cardinality(), ShouldEqual, 2)
+
+		So(rc.get(MaxUint32-1), ShouldBeTrue)
+		So(rc.get(MaxUint32), ShouldBeTrue)
+		rc.removeKey(MaxUint32 - 1)
+		So(rc.cardinality(), ShouldEqual, 1)
+		rc.removeKey(MaxUint32)
+		So(rc.cardinality(), ShouldEqual, 0)
 	})
 }
