@@ -568,7 +568,7 @@ toploop:
 }
 
 // get returns true iff key is in the container.
-func (rc *runContainer32) get(key uint32) bool {
+func (rc *runContainer32) contains(key uint32) bool {
 	_, in, _ := rc.search(int64(key), nil)
 	return in
 }
@@ -736,6 +736,11 @@ func newRunContainer32CopyIv(iv []interval32) *runContainer32 {
 	}
 	copy(rc.iv, iv)
 	return rc
+}
+
+func (rc *runContainer32) Clone() *runContainer32 {
+	rc2 := newRunContainer32CopyIv(rc.iv)
+	return rc2
 }
 
 // newRunContainer32TakeOwnership returns a new runContainer32

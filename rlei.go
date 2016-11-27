@@ -202,31 +202,9 @@ func (rc *runContainer16) equals(o interface{}) bool {
 }
 
 func (rc *runContainer16) add(x uint16) container {
-	/*	// Special case adding to the end of the container.
-		l := len(ac.content)
-		if l > 0 && l < arrayDefaultMaxSize && ac.content[l-1] < x {
-			ac.content = append(ac.content, x)
-			return ac
-		}
-
-		loc := binarySearch(ac.content, x)
-
-		if loc < 0 {
-			if len(ac.content) >= arrayDefaultMaxSize {
-				a := ac.toBitmapContainer()
-				a.add(x)
-				return a
-			}
-			s := ac.content
-			i := -loc - 1
-			s = append(s, 0)
-			copy(s[i+1:], s[i:])
-			s[i] = x
-			ac.content = s
-		}
-		return ac
-	*/
-	return nil
+	out := rc.Clone()
+	out.Add(x)
+	return out
 }
 
 func (rc *runContainer16) remove(x uint16) container {

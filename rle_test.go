@@ -262,18 +262,18 @@ func TestRleIntersection32(t *testing.T) {
 			p("isect is %v", isect)
 
 			So(isect.cardinality(), ShouldEqual, 3)
-			So(isect.get(4), ShouldBeTrue)
-			So(isect.get(6), ShouldBeTrue)
-			So(isect.get(8), ShouldBeTrue)
+			So(isect.contains(4), ShouldBeTrue)
+			So(isect.contains(6), ShouldBeTrue)
+			So(isect.contains(8), ShouldBeTrue)
 
 			d := newRunContainer32TakeOwnership([]interval32{{start: 0, last: UpperLimit32}})
 
 			isect = isect.intersect(d)
 			p("isect is %v", isect)
 			So(isect.cardinality(), ShouldEqual, 3)
-			So(isect.get(4), ShouldBeTrue)
-			So(isect.get(6), ShouldBeTrue)
-			So(isect.get(8), ShouldBeTrue)
+			So(isect.contains(4), ShouldBeTrue)
+			So(isect.contains(6), ShouldBeTrue)
+			So(isect.contains(8), ShouldBeTrue)
 
 			p("test breaking apart intervals")
 			e := newRunContainer32TakeOwnership([]interval32{{2, 4}, {8, 9}, {14, 16}, {20, 22}})
@@ -286,14 +286,14 @@ func TestRleIntersection32(t *testing.T) {
 				isect = e.intersect(f)
 				p("isect of e and f is %v", isect)
 				So(isect.cardinality(), ShouldEqual, 8)
-				So(isect.get(3), ShouldBeTrue)
-				So(isect.get(4), ShouldBeTrue)
-				So(isect.get(8), ShouldBeTrue)
-				So(isect.get(9), ShouldBeTrue)
-				So(isect.get(14), ShouldBeTrue)
-				So(isect.get(15), ShouldBeTrue)
-				So(isect.get(16), ShouldBeTrue)
-				So(isect.get(22), ShouldBeTrue)
+				So(isect.contains(3), ShouldBeTrue)
+				So(isect.contains(4), ShouldBeTrue)
+				So(isect.contains(8), ShouldBeTrue)
+				So(isect.contains(9), ShouldBeTrue)
+				So(isect.contains(14), ShouldBeTrue)
+				So(isect.contains(15), ShouldBeTrue)
+				So(isect.contains(16), ShouldBeTrue)
+				So(isect.contains(22), ShouldBeTrue)
 			}
 
 			{
@@ -301,14 +301,14 @@ func TestRleIntersection32(t *testing.T) {
 				isect = f.intersect(e)
 				p("isect of f and e is %v", isect)
 				So(isect.cardinality(), ShouldEqual, 8)
-				So(isect.get(3), ShouldBeTrue)
-				So(isect.get(4), ShouldBeTrue)
-				So(isect.get(8), ShouldBeTrue)
-				So(isect.get(9), ShouldBeTrue)
-				So(isect.get(14), ShouldBeTrue)
-				So(isect.get(15), ShouldBeTrue)
-				So(isect.get(16), ShouldBeTrue)
-				So(isect.get(22), ShouldBeTrue)
+				So(isect.contains(3), ShouldBeTrue)
+				So(isect.contains(4), ShouldBeTrue)
+				So(isect.contains(8), ShouldBeTrue)
+				So(isect.contains(9), ShouldBeTrue)
+				So(isect.contains(14), ShouldBeTrue)
+				So(isect.contains(15), ShouldBeTrue)
+				So(isect.contains(16), ShouldBeTrue)
+				So(isect.contains(22), ShouldBeTrue)
 			}
 
 		}
@@ -399,7 +399,7 @@ func TestRleRandomIntersection32(t *testing.T) {
 
 				for k := range hashi {
 					p("hashi has %v, checking in isect", k)
-					So(isect.get(uint32(k)), ShouldBeTrue)
+					So(isect.contains(uint32(k)), ShouldBeTrue)
 				}
 
 				p("checking for cardinality agreement: isect is %v, len(hashi) is %v", isect.cardinality(), len(hashi))
@@ -491,7 +491,7 @@ func TestRleRandomUnion32(t *testing.T) {
 
 				for k := range hashu {
 					p("hashu has %v, checking in union", k)
-					So(union.get(uint32(k)), ShouldBeTrue)
+					So(union.contains(uint32(k)), ShouldBeTrue)
 				}
 
 				p("checking for cardinality agreement:")
@@ -508,7 +508,7 @@ func TestRleRandomUnion32(t *testing.T) {
 				So(union.cardinality(), ShouldEqual, len(hashu))
 				for k := range hashu {
 					p("hashu has %v, checking in union", k)
-					So(union.get(uint32(k)), ShouldBeTrue)
+					So(union.contains(uint32(k)), ShouldBeTrue)
 				}
 
 			}
@@ -692,17 +692,17 @@ func TestRleStoringMax32(t *testing.T) {
 
 		rc := newRunContainer32()
 		rc.Add(MaxUint32)
-		So(rc.get(MaxUint32), ShouldBeTrue)
+		So(rc.contains(MaxUint32), ShouldBeTrue)
 		So(rc.cardinality(), ShouldEqual, 1)
 		rc.removeKey(MaxUint32)
-		So(rc.get(MaxUint32), ShouldBeFalse)
+		So(rc.contains(MaxUint32), ShouldBeFalse)
 		So(rc.cardinality(), ShouldEqual, 0)
 
 		rc.set(false, MaxUint32-1, MaxUint32)
 		So(rc.cardinality(), ShouldEqual, 2)
 
-		So(rc.get(MaxUint32-1), ShouldBeTrue)
-		So(rc.get(MaxUint32), ShouldBeTrue)
+		So(rc.contains(MaxUint32-1), ShouldBeTrue)
+		So(rc.contains(MaxUint32), ShouldBeTrue)
 		rc.removeKey(MaxUint32 - 1)
 		So(rc.cardinality(), ShouldEqual, 1)
 		rc.removeKey(MaxUint32)

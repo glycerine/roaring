@@ -98,7 +98,7 @@ func (p uint16Slice) Less(i, j int) bool { return p[i] < p[j] }
 // Swap swaps elements i and j.
 func (p uint16Slice) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
 
-// addHelper helps build a runContainer
+// addHelper helps build a runContainer16.
 type addHelper16 struct {
 	runstart      uint16
 	runlen        uint16
@@ -736,6 +736,11 @@ func newRunContainer16CopyIv(iv []interval16) *runContainer16 {
 	}
 	copy(rc.iv, iv)
 	return rc
+}
+
+func (rc *runContainer16) Clone() *runContainer16 {
+	rc2 := newRunContainer16CopyIv(rc.iv)
+	return rc2
 }
 
 // newRunContainer16TakeOwnership returns a new runContainer16
