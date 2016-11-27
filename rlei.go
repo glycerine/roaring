@@ -243,15 +243,37 @@ func (rc *runContainer16) remove(x uint16) container {
 }
 
 func (rc *runContainer16) or(a container) container {
-	/*	switch a.(type) {
-		case *runContainer16:
-			return ac.orArray(a.(*runContainer16))
-		case *bitmapContainer:
-			return a.or(ac)
+	switch c := a.(type) {
+	case *runContainer16:
+		return rc.union(c)
+	case *arrayContainer:
+		return rc.orArray(c)
+	case *bitmapContainer:
+		return rc.orBitmapContainer(c)
+	}
+	panic("unsupported container type")
+}
+
+// orBitmapContainer finds the union of rc and bc.
+func (rc *runContainer16) orBitmapContainer(bc *bitmapContainer) container {
+	out := bc.clone()
+	for _, p := range rc.iv {
+		for i := p.start; i <= p.last; i++ {
+			out.add(i)
 		}
-		panic("unsupported container type")
-	*/
-	return nil
+	}
+	return out
+}
+
+// orArray finds the union of rc and ac.
+func (rc *runContainer16) orArray(ac *arrayContainer) container {
+	out := ac.clone()
+	for _, p := range rc.iv {
+		for i := p.start; i <= p.last; i++ {
+			out.add(i)
+		}
+	}
+	return out
 }
 
 func (rc *runContainer16) ior(a container) container {
