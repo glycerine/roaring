@@ -98,7 +98,7 @@ func (p uint32Slice) Less(i, j int) bool { return p[i] < p[j] }
 // Swap swaps elements i and j.
 func (p uint32Slice) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
 
-// addHelper helps build a runContainer
+// addHelper helps build a runContainer32.
 type addHelper32 struct {
 	runstart      uint32
 	runlen        uint32

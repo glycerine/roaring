@@ -313,11 +313,13 @@ func (ac *arrayContainer) lazyorArray(value2 *arrayContainer) container {
 }
 
 func (ac *arrayContainer) and(a container) container {
-	switch a.(type) {
+	switch x := a.(type) {
 	case *arrayContainer:
-		return ac.andArray(a.(*arrayContainer))
+		return ac.andArray(x)
 	case *bitmapContainer:
-		return a.and(ac)
+		return x.and(ac)
+	case *runContainer16:
+		return x.andArray(ac)
 	}
 	panic("unsupported container type")
 }

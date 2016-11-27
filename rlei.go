@@ -2,38 +2,58 @@ package roaring
 
 ///////////////////////////////////////////////////
 //
-// container interface methods for runContainer32
+// container interface methods for runContainer16
 //
 ///////////////////////////////////////////////////
 
 // compile time verify we meet interface requirements
-var _ container = &runContainer32{}
+var _ container = &runContainer16{}
 
-func (ac *runContainer32) clone() container {
-	/*
-		ptr := runContainer32{make([]uint16, len(ac.content))}
-		copy(ptr.content, ac.content[:])
-		return &ptr
-	*/
-	return nil
+func (rc *runContainer16) clone() container {
+	return newRunContainer16CopyIv(rc.iv)
 }
 
-func (ac *runContainer32) and(a container) container {
-	/*	switch a.(type) {
-		case *runContainer32:
-			return ac.andArray(a.(*runContainer32))
-		case *bitmapContainer:
-			return a.and(ac)
+func (rc *runContainer16) and(a container) container {
+	switch c := a.(type) {
+	case *runContainer16:
+		return rc.intersect(c)
+	case *arrayContainer:
+		return rc.andArray(c)
+	case *bitmapContainer:
+		return rc.andBitmapContainer(c)
+	}
+	panic("unsupported container type")
+}
+
+// andBitmapContainer finds the intersection of rc and b.
+func (rc *runContainer16) andBitmapContainer(bc *bitmapContainer) container {
+	out := newRunContainer16()
+	for _, p := range rc.iv {
+		for i := p.start; i <= p.last; i++ {
+			if bc.contains(i) {
+				out.Add(i)
+			}
 		}
-		panic("unsupported container type")
-	*/
-	return nil
+	}
+	return out
 }
 
-func (ac *runContainer32) iand(a container) container {
+func (rc *runContainer16) andArray(ac *arrayContainer) container {
+	out := newRunContainer16()
+	for _, p := range rc.iv {
+		for i := p.start; i <= p.last; i++ {
+			if ac.contains(i) {
+				out.Add(i)
+			}
+		}
+	}
+	return out
+}
+
+func (rc *runContainer16) iand(a container) container {
 	/*	switch a.(type) {
-		case *runContainer32:
-			return ac.iandArray(a.(*runContainer32))
+		case *runContainer16:
+			return ac.iandArray(a.(*runContainer16))
 		case *bitmapContainer:
 			return ac.iandBitmap(a.(*bitmapContainer))
 		}
@@ -42,10 +62,10 @@ func (ac *runContainer32) iand(a container) container {
 	return nil
 }
 
-func (ac *runContainer32) andNot(a container) container {
+func (rc *runContainer16) andNot(a container) container {
 	/*	switch a.(type) {
-		case *runContainer32:
-			return ac.andNotArray(a.(*runContainer32))
+		case *runContainer16:
+			return ac.andNotArray(a.(*runContainer16))
 		case *bitmapContainer:
 			return ac.andNotBitmap(a.(*bitmapContainer))
 		}
@@ -54,20 +74,20 @@ func (ac *runContainer32) andNot(a container) container {
 	return nil
 }
 
-func (ac *runContainer32) fillLeastSignificant16bits(x []uint32, i int, mask uint32) {
+func (rc *runContainer16) fillLeastSignificant16bits(x []uint32, i int, mask uint32) {
 	/*	for k := 0; k < len(ac.content); k++ {
-			x[k+i] = uint32(ac.content[k]) | mask
+			x[k+i] = uint16(ac.content[k]) | mask
 		}
 	*/
 }
 
-func (ac *runContainer32) getShortIterator() shortIterable {
+func (rc *runContainer16) getShortIterator() shortIterable {
 	// TODO
 	return &shortIterator{}
 	//	return &shortIterator{ac.content, 0}
 }
 
-func (ac *runContainer32) getSizeInBytes() int {
+func (rc *runContainer16) getSizeInBytes() int {
 	/*
 		// unsafe.Sizeof calculates the memory used by the top level of the slice
 		// descriptor - not including the size of the memory referenced by the slice.
@@ -78,11 +98,11 @@ func (ac *runContainer32) getSizeInBytes() int {
 }
 
 // serializedSizeInBytes returns the number of bytes of memory
-// required by this runContainer32.
-//func (rc *runContainer32) serializedSizeInBytes() int
+// required by this runContainer16.
+//func (rc *runContainer16) serializedSizeInBytes() int
 
 // add the values in the range [firstOfRange,lastofRange)
-func (ac *runContainer32) iaddRange(firstOfRange, lastOfRange int) container {
+func (rc *runContainer16) iaddRange(firstOfRange, lastOfRange int) container {
 	/*	if firstOfRange >= lastOfRange {
 			return ac
 		}
@@ -122,7 +142,7 @@ func (ac *runContainer32) iaddRange(firstOfRange, lastOfRange int) container {
 }
 
 // remove the values in the range [firstOfRange,lastOfRange)
-func (ac *runContainer32) iremoveRange(firstOfRange, lastOfRange int) container {
+func (rc *runContainer16) iremoveRange(firstOfRange, lastOfRange int) container {
 	/*	if firstOfRange >= lastOfRange {
 			return ac
 		}
@@ -147,7 +167,7 @@ func (ac *runContainer32) iremoveRange(firstOfRange, lastOfRange int) container 
 }
 
 // flip the values in the range [firstOfRange,lastOfRange)
-func (ac *runContainer32) not(firstOfRange, lastOfRange int) container {
+func (rc *runContainer16) not(firstOfRange, lastOfRange int) container {
 	/*	if firstOfRange >= lastOfRange {
 			return ac.clone()
 		}
@@ -156,9 +176,9 @@ func (ac *runContainer32) not(firstOfRange, lastOfRange int) container {
 	return nil
 }
 
-func (ac *runContainer32) equals(o interface{}) bool {
+func (rc *runContainer16) equals(o interface{}) bool {
 	/*
-		srb, ok := o.(*runContainer32)
+		srb, ok := o.(*runContainer16)
 		if ok {
 			// Check if the containers are the same object.
 			if ac == srb {
@@ -181,7 +201,7 @@ func (ac *runContainer32) equals(o interface{}) bool {
 	return false
 }
 
-func (ac *runContainer32) add(x uint16) container {
+func (rc *runContainer16) add(x uint16) container {
 	/*	// Special case adding to the end of the container.
 		l := len(ac.content)
 		if l > 0 && l < arrayDefaultMaxSize && ac.content[l-1] < x {
@@ -209,7 +229,7 @@ func (ac *runContainer32) add(x uint16) container {
 	return nil
 }
 
-func (ac *runContainer32) remove(x uint16) container {
+func (rc *runContainer16) remove(x uint16) container {
 	/*	loc := binarySearch(ac.content, x)
 		if loc >= 0 {
 			s := ac.content
@@ -222,10 +242,10 @@ func (ac *runContainer32) remove(x uint16) container {
 
 }
 
-func (ac *runContainer32) or(a container) container {
+func (rc *runContainer16) or(a container) container {
 	/*	switch a.(type) {
-		case *runContainer32:
-			return ac.orArray(a.(*runContainer32))
+		case *runContainer16:
+			return ac.orArray(a.(*runContainer16))
 		case *bitmapContainer:
 			return a.or(ac)
 		}
@@ -234,10 +254,10 @@ func (ac *runContainer32) or(a container) container {
 	return nil
 }
 
-func (ac *runContainer32) ior(a container) container {
+func (rc *runContainer16) ior(a container) container {
 	/*	switch a.(type) {
-		case *runContainer32:
-			return ac.orArray(a.(*runContainer32))
+		case *runContainer16:
+			return ac.orArray(a.(*runContainer16))
 		case *bitmapContainer:
 			return a.ior(ac)
 		}
@@ -246,10 +266,10 @@ func (ac *runContainer32) ior(a container) container {
 	return nil
 }
 
-func (ac *runContainer32) lazyIOR(a container) container {
+func (rc *runContainer16) lazyIOR(a container) container {
 	/*	switch a.(type) {
-		case *runContainer32:
-			return ac.lazyorArray(a.(*runContainer32))
+		case *runContainer16:
+			return ac.lazyorArray(a.(*runContainer16))
 		case *bitmapContainer:
 			return a.lazyOR(ac)
 		}
@@ -258,10 +278,10 @@ func (ac *runContainer32) lazyIOR(a container) container {
 	return nil
 }
 
-func (ac *runContainer32) lazyOR(a container) container {
+func (rc *runContainer16) lazyOR(a container) container {
 	/*	switch a.(type) {
-		case *runContainer32:
-			return ac.lazyorArray(a.(*runContainer32))
+		case *runContainer16:
+			return ac.lazyorArray(a.(*runContainer16))
 		case *bitmapContainer:
 			return a.lazyOR(ac)
 		}
@@ -270,11 +290,11 @@ func (ac *runContainer32) lazyOR(a container) container {
 	return nil
 }
 
-func (ac *runContainer32) intersects(a container) bool {
+func (rc *runContainer16) intersects(a container) bool {
 	/*
 		switch a.(type) {
-		case *runContainer32:
-			return ac.intersectsArray(a.(*runContainer32))
+		case *runContainer16:
+			return ac.intersectsArray(a.(*runContainer16))
 		case *bitmapContainer:
 			return a.intersects(ac)
 		}
@@ -283,10 +303,10 @@ func (ac *runContainer32) intersects(a container) bool {
 	return false
 }
 
-func (ac *runContainer32) xor(a container) container {
+func (rc *runContainer16) xor(a container) container {
 	/*	switch a.(type) {
-		case *runContainer32:
-			return ac.xorArray(a.(*runContainer32))
+		case *runContainer16:
+			return ac.xorArray(a.(*runContainer16))
 		case *bitmapContainer:
 			return a.xor(ac)
 		}
@@ -295,10 +315,10 @@ func (ac *runContainer32) xor(a container) container {
 	return nil
 }
 
-func (ac *runContainer32) iandNot(a container) container {
+func (rc *runContainer16) iandNot(a container) container {
 	/*	switch a.(type) {
-		case *runContainer32:
-			return ac.iandNotArray(a.(*runContainer32))
+		case *runContainer16:
+			return ac.iandNotArray(a.(*runContainer16))
 		case *bitmapContainer:
 			return ac.iandNotBitmap(a.(*bitmapContainer))
 		}
@@ -308,7 +328,7 @@ func (ac *runContainer32) iandNot(a container) container {
 }
 
 // flip the values in the range [firstOfRange,lastOfRange)
-func (ac *runContainer32) inot(firstOfRange, lastOfRange int) container {
+func (rc *runContainer16) inot(firstOfRange, lastOfRange int) container {
 	/*	if firstOfRange >= lastOfRange {
 			return ac
 		}
@@ -317,11 +337,11 @@ func (ac *runContainer32) inot(firstOfRange, lastOfRange int) container {
 	return nil
 }
 
-func (ac *runContainer32) getCardinality() int {
-	return int(ac.cardinality())
+func (rc *runContainer16) getCardinality() int {
+	return int(rc.cardinality())
 }
 
-func (ac *runContainer32) rank(x uint16) int {
+func (rc *runContainer16) rank(x uint16) int {
 	/*
 		answer := binarySearch(ac.content, x)
 		if answer >= 0 {
@@ -333,12 +353,7 @@ func (ac *runContainer32) rank(x uint16) int {
 	return 0 // TODO
 }
 
-func (ac *runContainer32) selectInt(x uint16) int {
+func (rc *runContainer16) selectInt(x uint16) int {
 	return 0 // TODO
 	//	return int(ac.content[x])
-}
-
-func (ac *runContainer32) contains(x uint16) bool {
-	return false // TODO
-	//	return binarySearch(ac.content, x) >= 0
 }

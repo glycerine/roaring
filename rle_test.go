@@ -536,7 +536,7 @@ func TestRleAndOrXor32(t *testing.T) {
 			b0.Add(6)
 			b0.Add(8)
 
-			and := rc.And(b0)
+			and := rc.andBitmap(b0)
 			or := rc.Or(b0)
 			xor := rc.Xor(b0)
 
@@ -552,7 +552,7 @@ func TestRleAndOrXor32(t *testing.T) {
 			oneZero := newRunContainer32FromArray(onceler)
 			So(empty.cardinality(), ShouldEqual, 0)
 			So(oneZero.cardinality(), ShouldEqual, 1)
-			So(empty.And(b0).GetCardinality(), ShouldEqual, 0)
+			So(empty.andBitmap(b0).GetCardinality(), ShouldEqual, 0)
 			So(empty.Or(b0).GetCardinality(), ShouldEqual, 3)
 
 			// exercise newRunContainer32FromVals() with 0 and 1 inputs.

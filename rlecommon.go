@@ -60,7 +60,7 @@ type searchOptions struct {
 }
 
 // And finds the intersection of rc and b.
-func (rc *runContainer32) And(b *Bitmap) *Bitmap {
+func (rc *runContainer32) andBitmap(b *Bitmap) *Bitmap {
 	out := NewBitmap()
 	for _, p := range rc.iv {
 		for i := p.start; i <= p.last; i++ {

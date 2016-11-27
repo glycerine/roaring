@@ -568,7 +568,7 @@ toploop:
 }
 
 // get returns true iff key is in the container.
-func (rc *runContainer16) get(key uint16) bool {
+func (rc *runContainer16) contains(key uint16) bool {
 	_, in, _ := rc.search(int64(key), nil)
 	return in
 }

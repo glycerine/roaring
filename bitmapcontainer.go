@@ -377,11 +377,15 @@ func (bc *bitmapContainer) xorBitmap(value2 *bitmapContainer) container {
 }
 
 func (bc *bitmapContainer) and(a container) container {
-	switch a.(type) {
+	switch x := a.(type) {
 	case *arrayContainer:
-		return bc.andArray(a.(*arrayContainer))
+		return bc.andArray(x)
 	case *bitmapContainer:
-		return bc.andBitmap(a.(*bitmapContainer))
+		return bc.andBitmap(x)
+	case *runContainer16:
+		return x.andBitmapContainer(bc)
+		//	case *runContainer16:
+		//		return x.andBitmap(bc)
 	}
 	panic("unsupported container type")
 }
