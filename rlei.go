@@ -79,9 +79,7 @@ func (ac *runContainer32) getSizeInBytes() int {
 
 // serializedSizeInBytes returns the number of bytes of memory
 // required by this runContainer32.
-func (rc *runContainer32) serializedSizeInBytes() int {
-	return perIntervalRc32Size * int(rc.cardinality())
-}
+//func (rc *runContainer32) serializedSizeInBytes() int
 
 // add the values in the range [firstOfRange,lastofRange)
 func (ac *runContainer32) iaddRange(firstOfRange, lastOfRange int) container {

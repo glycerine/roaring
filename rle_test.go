@@ -17,20 +17,20 @@ func init() {
 func TestRleInterval32s(t *testing.T) {
 
 	Convey("canMerge, and mergeInterval32s should do what they say", t, func() {
-		a := interval32{start: 0, endx: 10}
+		a := interval32{start: 0, last: 9}
 		msg := a.String()
 		p("a is %v", msg)
-		b := interval32{start: 0, endx: 2}
+		b := interval32{start: 0, last: 1}
 		report := sliceToString32([]interval32{a, b})
 		_ = report
 		p("a and b together are: %s", report)
-		c := interval32{start: 2, endx: 5}
-		d := interval32{start: 2, endx: 6}
-		e := interval32{start: 0, endx: 5}
-		f := interval32{start: 9, endx: 10}
-		g := interval32{start: 8, endx: 10}
-		h := interval32{start: 5, endx: 7}
-		i := interval32{start: 6, endx: 7}
+		c := interval32{start: 2, last: 4}
+		d := interval32{start: 2, last: 5}
+		e := interval32{start: 0, last: 4}
+		f := interval32{start: 9, last: 9}
+		g := interval32{start: 8, last: 9}
+		h := interval32{start: 5, last: 6}
+		i := interval32{start: 6, last: 6}
 
 		aIb, empty := intersectInterval32s(a, b)
 		So(empty, ShouldBeFalse)
@@ -54,15 +54,16 @@ func TestRleInterval32s(t *testing.T) {
 		So(mergeInterval32s(h, i), ShouldResemble, h)
 		So(mergeInterval32s(i, h), ShouldResemble, h)
 
-		So(mergeInterval32s(interval32{start: 0, endx: 1}, interval32{start: 1, endx: 2}), ShouldResemble, interval32{start: 0, endx: 2})
-		So(mergeInterval32s(interval32{start: 1, endx: 2}, interval32{start: 0, endx: 1}), ShouldResemble, interval32{start: 0, endx: 2})
-		So(mergeInterval32s(interval32{start: 0, endx: 4}, interval32{start: 3, endx: 5}), ShouldResemble, interval32{start: 0, endx: 5})
-		So(mergeInterval32s(interval32{start: 0, endx: 4}, interval32{start: 3, endx: 4}), ShouldResemble, interval32{start: 0, endx: 4})
+		////// start
+		So(mergeInterval32s(interval32{start: 0, last: 0}, interval32{start: 1, last: 1}), ShouldResemble, interval32{start: 0, last: 1})
+		So(mergeInterval32s(interval32{start: 1, last: 1}, interval32{start: 0, last: 0}), ShouldResemble, interval32{start: 0, last: 1})
+		So(mergeInterval32s(interval32{start: 0, last: 4}, interval32{start: 3, last: 5}), ShouldResemble, interval32{start: 0, last: 5})
+		So(mergeInterval32s(interval32{start: 0, last: 4}, interval32{start: 3, last: 4}), ShouldResemble, interval32{start: 0, last: 4})
 
-		So(mergeInterval32s(interval32{start: 0, endx: 8}, interval32{start: 1, endx: 7}), ShouldResemble, interval32{start: 0, endx: 8})
-		So(mergeInterval32s(interval32{start: 1, endx: 7}, interval32{start: 0, endx: 8}), ShouldResemble, interval32{start: 0, endx: 8})
+		So(mergeInterval32s(interval32{start: 0, last: 8}, interval32{start: 1, last: 7}), ShouldResemble, interval32{start: 0, last: 8})
+		So(mergeInterval32s(interval32{start: 1, last: 7}, interval32{start: 0, last: 8}), ShouldResemble, interval32{start: 0, last: 8})
 
-		So(func() { _ = mergeInterval32s(interval32{start: 0, endx: 1}, interval32{start: 2, endx: 3}) }, ShouldPanic)
+		So(func() { _ = mergeInterval32s(interval32{start: 0, last: 0}, interval32{start: 2, last: 3}) }, ShouldPanic)
 
 	})
 }
@@ -80,7 +81,7 @@ func TestRleRunIterator32(t *testing.T) {
 			So(it.HasNext(), ShouldBeFalse)
 		}
 		{
-			rc := newRunContainer32TakeOwnership([]interval32{{start: 4, endx: 5}})
+			rc := newRunContainer32TakeOwnership([]interval32{{start: 4, last: 4}})
 			So(rc.cardinality(), ShouldEqual, 1)
 			it := rc.NewRunIterator32()
 			So(it.HasNext(), ShouldBeTrue)
@@ -88,7 +89,7 @@ func TestRleRunIterator32(t *testing.T) {
 			So(it.Cur(), ShouldResemble, uint32(4))
 		}
 		{
-			rc := newRunContainer32CopyIv([]interval32{{start: 4, endx: 10}})
+			rc := newRunContainer32CopyIv([]interval32{{start: 4, last: 9}})
 			So(rc.cardinality(), ShouldEqual, 6)
 			it := rc.NewRunIterator32()
 			So(it.HasNext(), ShouldBeTrue)
@@ -99,7 +100,7 @@ func TestRleRunIterator32(t *testing.T) {
 		}
 
 		{
-			rc := newRunContainer32TakeOwnership([]interval32{{start: 4, endx: 10}})
+			rc := newRunContainer32TakeOwnership([]interval32{{start: 4, last: 9}})
 			card := rc.cardinality()
 			So(card, ShouldEqual, 6)
 			So(rc.serializedSizeInBytes(), ShouldEqual, int(unsafe.Sizeof(interval32{}))*int(card))
@@ -127,14 +128,14 @@ func TestRleRunIterator32(t *testing.T) {
 		}
 		{
 			rc := newRunContainer32TakeOwnership([]interval32{
-				{start: 0, endx: 1},
-				{start: 2, endx: 3},
-				{start: 4, endx: 5},
+				{start: 0, last: 0},
+				{start: 2, last: 2},
+				{start: 4, last: 4},
 			})
 			rc1 := newRunContainer32TakeOwnership([]interval32{
-				{start: 6, endx: 8},
-				{start: 10, endx: 12},
-				{start: UpperLimit32 - 1, endx: UpperLimit32},
+				{start: 6, last: 7},
+				{start: 10, last: 11},
+				{start: MaxUint32, last: MaxUint32},
 			})
 
 			rc = rc.union(rc1)
@@ -148,14 +149,14 @@ func TestRleRunIterator32(t *testing.T) {
 			So(it.Next(), ShouldEqual, uint32(7))
 			So(it.Next(), ShouldEqual, uint32(10))
 			So(it.Next(), ShouldEqual, uint32(11))
-			So(it.Next(), ShouldEqual, uint32(UpperLimit32-1))
+			So(it.Next(), ShouldEqual, uint32(MaxUint32))
 			So(it.HasNext(), ShouldEqual, false)
 
 			rc2 := newRunContainer32TakeOwnership([]interval32{
-				{start: 0, endx: UpperLimit32},
+				{start: 0, last: MaxUint32},
 			})
 
-			p("union with a full [0,2^32-1) container should yield that same single interval run container")
+			p("union with a full [0,2^32-1] container should yield that same single interval run container")
 			rc2 = rc2.union(rc)
 			So(rc2.numIntervals(), ShouldEqual, 1)
 		}
@@ -166,50 +167,50 @@ func TestRleRunSearch32(t *testing.T) {
 
 	Convey("RunContainer32.search should respect the prior bounds we provide for efficiency of searching through a subset of the intervals", t, func() {
 		{
-			vals := []uint32{0, 2, 4, 6, 8, 10, 12, 14, 16, 18, UpperLimit32 - 3, UpperLimit32 - 1}
-			expWhere := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}
-			absent := []uint32{1, 3, 5, 7, 9, 11, 13, 15, 17, 19, UpperLimit32 - 2}
+			vals := []uint32{0, 2, 4, 6, 8, 10, 12, 14, 16, 18, MaxUint32 - 3, MaxUint32}
+			exAt := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11} // expected at
+			absent := []uint32{1, 3, 5, 7, 9, 11, 13, 15, 17, 19, MaxUint32 - 2}
 
 			rc := newRunContainer32FromVals(true, vals...)
 
 			So(rc.cardinality(), ShouldEqual, 12)
 
-			var where int
+			var where int64
 			var present bool
 
 			for i, v := range vals {
-				where, present, _ = rc.search(v, nil)
+				where, present, _ = rc.search(int64(v), nil)
 				So(present, ShouldBeTrue)
-				So(where, ShouldEqual, expWhere[i])
+				So(where, ShouldEqual, exAt[i])
 			}
 
 			for i, v := range absent {
 				//p("absent check on i=%v, v=%v in rc=%v", i, v, rc)
-				where, present, _ = rc.search(v, nil)
+				where, present, _ = rc.search(int64(v), nil)
 				So(present, ShouldBeFalse)
 				So(where, ShouldEqual, i)
 			}
 
-			// delete the UpperLimit32 -1 so we can test
+			// delete the MaxUint32 so we can test
 			// the behavior when searching near upper limit.
 
-			p("before removing UpperLimit32-1: %v", rc)
+			p("before removing MaxUint32: %v", rc)
 
 			So(rc.cardinality(), ShouldEqual, 12)
 			So(rc.numIntervals(), ShouldEqual, 12)
 
-			rc.removeKey(UpperLimit32 - 1)
-			p("after removing UpperLimit32-1: %v", rc)
+			rc.removeKey(MaxUint32)
+			p("after removing MaxUint32: %v", rc)
 			So(rc.cardinality(), ShouldEqual, 11)
 			So(rc.numIntervals(), ShouldEqual, 11)
 
-			p("search for absent UpperLimit32-1 should return the interval before our key")
-			where, present, _ = rc.search(UpperLimit32-1, nil)
+			p("search for absent MaxUint32 should return the interval before our key")
+			where, present, _ = rc.search(MaxUint32, nil)
 			So(present, ShouldBeFalse)
 			So(where, ShouldEqual, 10)
 
 			var numCompares int
-			where, present, numCompares = rc.search(UpperLimit32, nil)
+			where, present, numCompares = rc.search(MaxUint32, nil)
 			So(present, ShouldBeFalse)
 			So(where, ShouldEqual, 10)
 			p("numCompares = %v", numCompares)
@@ -219,20 +220,20 @@ func TestRleRunSearch32(t *testing.T) {
 			opts := &searchOptions{
 				StartIndex: 5,
 			}
-			where, present, numCompares = rc.search(UpperLimit32, opts)
+			where, present, numCompares = rc.search(MaxUint32, opts)
 			So(present, ShouldBeFalse)
 			So(where, ShouldEqual, 10)
 			p("numCompares = %v", numCompares)
 			So(numCompares, ShouldEqual, 2)
 
 			p("confirm that opts searchOptions to search is respected")
-			where, present, _ = rc.search(UpperLimit32-3, opts)
+			where, present, _ = rc.search(MaxUint32-3, opts)
 			So(present, ShouldBeTrue)
 			So(where, ShouldEqual, 10)
 
-			// with the bound in place, UpperLimit32-3 should not be found
+			// with the bound in place, MaxUint32-3 should not be found
 			opts.EndxIndex = 10
-			where, present, _ = rc.search(UpperLimit32-3, opts)
+			where, present, _ = rc.search(MaxUint32-3, opts)
 			So(present, ShouldBeFalse)
 			So(where, ShouldEqual, 9)
 
@@ -253,8 +254,8 @@ func TestRleIntersection32(t *testing.T) {
 			p("a is %v", a)
 			p("b is %v", b)
 
-			So(haveOverlap32(interval32{0, 3}, interval32{2, 3}), ShouldBeTrue)
-			So(haveOverlap32(interval32{0, 3}, interval32{3, 4}), ShouldBeFalse)
+			So(haveOverlap32(interval32{0, 2}, interval32{2, 2}), ShouldBeTrue)
+			So(haveOverlap32(interval32{0, 2}, interval32{3, 3}), ShouldBeFalse)
 
 			isect := a.intersect(b)
 
@@ -265,7 +266,7 @@ func TestRleIntersection32(t *testing.T) {
 			So(isect.get(6), ShouldBeTrue)
 			So(isect.get(8), ShouldBeTrue)
 
-			d := newRunContainer32TakeOwnership([]interval32{{start: 0, endx: UpperLimit32}})
+			d := newRunContainer32TakeOwnership([]interval32{{start: 0, last: UpperLimit32}})
 
 			isect = isect.intersect(d)
 			p("isect is %v", isect)
@@ -275,8 +276,8 @@ func TestRleIntersection32(t *testing.T) {
 			So(isect.get(8), ShouldBeTrue)
 
 			p("test breaking apart intervals")
-			e := newRunContainer32TakeOwnership([]interval32{{2, 5}, {8, 10}, {14, 17}, {20, 23}})
-			f := newRunContainer32TakeOwnership([]interval32{{3, 19}, {22, 24}})
+			e := newRunContainer32TakeOwnership([]interval32{{2, 4}, {8, 9}, {14, 16}, {20, 22}})
+			f := newRunContainer32TakeOwnership([]interval32{{3, 18}, {22, 23}})
 
 			p("e = %v", e)
 			p("f = %v", f)
@@ -526,9 +527,9 @@ func TestRleAndOrXor32(t *testing.T) {
 	Convey("RunContainer And, Or, Xor tests", t, func() {
 		{
 			rc := newRunContainer32TakeOwnership([]interval32{
-				{start: 0, endx: 1},
-				{start: 2, endx: 3},
-				{start: 4, endx: 5},
+				{start: 0, last: 0},
+				{start: 2, last: 2},
+				{start: 4, last: 4},
 			})
 			b0 := NewBitmap()
 			b0.Add(2)
@@ -590,17 +591,17 @@ func TestRleCoverageOddsAndEnds32(t *testing.T) {
 		rc := &runContainer32{}
 		So(rc.String(), ShouldEqual, "runContainer32{}")
 		rc.iv = make([]interval32, 1)
-		rc.iv[0] = interval32{start: 3, endx: 5}
-		So(rc.String(), ShouldEqual, "runContainer32{0:[3, 5), }")
+		rc.iv[0] = interval32{start: 3, last: 4}
+		So(rc.String(), ShouldEqual, "runContainer32{0:[3, 4], }")
 
-		a := interval32{start: 5, endx: 10}
-		b := interval32{start: 0, endx: 2}
-		c := interval32{start: 1, endx: 3}
+		a := interval32{start: 5, last: 9}
+		b := interval32{start: 0, last: 1}
+		c := interval32{start: 1, last: 2}
 
 		// intersectInterval32s(a, b interval32)
 		isect, isEmpty := intersectInterval32s(a, b)
 		So(isEmpty, ShouldBeTrue)
-		So(isect.runlen(), ShouldEqual, 0)
+		// [0,0] can't be trusted: So(isect.runlen(), ShouldEqual, 0)
 		isect, isEmpty = intersectInterval32s(b, c)
 		So(isEmpty, ShouldBeFalse)
 		So(isect.runlen(), ShouldEqual, 1)
@@ -640,7 +641,7 @@ func TestRleCoverageOddsAndEnds32(t *testing.T) {
 			it := empty.NewRunIterator32()
 			So(func() { it.Next() }, ShouldPanic)
 			it2 := ra.NewRunIterator32()
-			it2.curIndex = len(it2.rc.iv)
+			it2.curIndex = int64(len(it2.rc.iv))
 			So(func() { it2.Next() }, ShouldPanic)
 
 			// RunIterator32.Remove()
@@ -689,7 +690,6 @@ func TestRleStoringMax32(t *testing.T) {
 
 	Convey("Storing the MaxUint32 should be possible, because it may be necessary to do so--users will assume that any valid uint32 should be storable. The runContainer will just have to special case this by storing an rc.hasMaxUint32 flag, and knowing that this value needs its own special case to work.", t, func() {
 
-		rleVerbose = true
 		rc := newRunContainer32()
 		rc.Add(MaxUint32)
 		So(rc.get(MaxUint32), ShouldBeTrue)

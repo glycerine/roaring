@@ -63,7 +63,7 @@ type searchOptions struct {
 func (rc *runContainer32) And(b *Bitmap) *Bitmap {
 	out := NewBitmap()
 	for _, p := range rc.iv {
-		for i := p.start; i < p.endx; i++ {
+		for i := p.start; i <= p.last; i++ {
 			if b.Contains(i) {
 				out.Add(i)
 			}
@@ -76,7 +76,7 @@ func (rc *runContainer32) And(b *Bitmap) *Bitmap {
 func (rc *runContainer32) Xor(b *Bitmap) *Bitmap {
 	out := b.Clone()
 	for _, p := range rc.iv {
-		for v := p.start; v < p.endx; v++ {
+		for v := p.start; v <= p.last; v++ {
 			if out.Contains(v) {
 				out.RemoveRange(uint64(v), uint64(v+1))
 			} else {
@@ -91,7 +91,7 @@ func (rc *runContainer32) Xor(b *Bitmap) *Bitmap {
 func (rc *runContainer32) Or(b *Bitmap) *Bitmap {
 	out := b.Clone()
 	for _, p := range rc.iv {
-		for v := p.start; v < p.endx; v++ {
+		for v := p.start; v <= p.last; v++ {
 			out.Add(v)
 		}
 	}
@@ -126,7 +126,7 @@ type trial struct {
 func (rc *runContainer16) And(b *Bitmap) *Bitmap {
 	out := NewBitmap()
 	for _, p := range rc.iv {
-		for i := p.start; i < p.endx; i++ {
+		for i := p.start; i <= p.last; i++ {
 			if b.Contains(uint32(i)) {
 				out.Add(uint32(i))
 			}
@@ -139,7 +139,7 @@ func (rc *runContainer16) And(b *Bitmap) *Bitmap {
 func (rc *runContainer16) Xor(b *Bitmap) *Bitmap {
 	out := b.Clone()
 	for _, p := range rc.iv {
-		for v := p.start; v < p.endx; v++ {
+		for v := p.start; v <= p.last; v++ {
 			w := uint32(v)
 			if out.Contains(w) {
 				out.RemoveRange(uint64(w), uint64(w+1))
@@ -155,7 +155,7 @@ func (rc *runContainer16) Xor(b *Bitmap) *Bitmap {
 func (rc *runContainer16) Or(b *Bitmap) *Bitmap {
 	out := b.Clone()
 	for _, p := range rc.iv {
-		for v := p.start; v < p.endx; v++ {
+		for v := p.start; v <= p.last; v++ {
 			out.Add(uint32(v))
 		}
 	}
