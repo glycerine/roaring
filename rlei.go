@@ -208,16 +208,9 @@ func (rc *runContainer16) add(x uint16) container {
 }
 
 func (rc *runContainer16) remove(x uint16) container {
-	/*	loc := binarySearch(ac.content, x)
-		if loc >= 0 {
-			s := ac.content
-			s = append(s[:loc], s[loc+1:]...)
-			ac.content = s
-		}
-		return ac
-	*/
-	return nil
-
+	out := rc.Clone()
+	out.removeKey(x)
+	return out
 }
 
 func (rc *runContainer16) or(a container) container {
