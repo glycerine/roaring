@@ -62,10 +62,9 @@ type interval16 struct {
 	last  uint16
 }
 
-// runlen returns 1 + iv.last - iv.start, i.e. the
-// count of integers in the interval.
-func (iv interval16) runlen() uint16 {
-	return 1 + iv.last - iv.start
+// runlen returns the count of integers in the interval.
+func (iv interval16) runlen() int64 {
+	return 1 + int64(iv.last) - int64(iv.start)
 }
 
 // String produces a human viewable string of the contents.
@@ -476,7 +475,7 @@ toploop:
 		//p("============     top of loop, pass = %v", pass)
 		pass++
 
-		isOverlap, isLeftoverA, isLeftoverB, leftoverStart, intersection = intersectWithLeftover16(astart, int64(a.iv[acuri].last)+1, bstart, int64(b.iv[bcuri].last)+1)
+		isOverlap, isLeftoverA, isLeftoverB, leftoverStart, intersection = intersectWithLeftover16(astart, int64(a.iv[acuri].last), bstart, int64(b.iv[bcuri].last))
 
 		//p("acuri=%v, astart=%v, a.iv[acuri].endx=%v,   bcuri=%v, bstart=%v, b.iv[bcuri].endx=%v, isOverlap=%v, isLeftoverA=%v, isLeftoverB=%v, leftoverStart=%v, intersection = %#v", acuri, astart, a.iv[acuri].endx, bcuri, bstart, b.iv[bcuri].endx, isOverlap, isLeftoverA, isLeftoverB, leftoverStart, intersection)
 
@@ -945,38 +944,42 @@ func (rc *runContainer16) deleteAt(curIndex *int64, curPosInIndex *uint16, curSe
 	// are we first, last, or in the middle of our interval16?
 	switch {
 	case pos == 0:
-		// first
-		rc.iv[ci].start++
-		// does our interval16 disappear?
-		if int64(rc.iv[ci].start) == int64(rc.iv[ci].last)+1 {
-			// yes, delete it
+		p("pos == 0, first")
+		if int64(rc.iv[ci].start) == int64(rc.iv[ci].last) {
+			// our interval disappears
 			rc.iv = append(rc.iv[:ci], rc.iv[ci+1:]...)
 			// curIndex stays the same, since the delete did
 			// the advance for us.
 			*curPosInIndex = 0
+		} else {
+			rc.iv[ci].start++ // no longer overflowable
 		}
-	case pos == rc.iv[ci].runlen()-1:
+	case int64(pos) == rc.iv[ci].runlen()-1:
 		// last
 		rc.iv[ci].last--
 		// our interval16 cannot disappear, else we would have been pos == 0, case first above.
-		//p("deleteAt: pos is last case, curIndex=%v, curPosInIndex=%v", *curIndex, *curPosInIndex)
+		p("deleteAt: pos is last case, curIndex=%v, curPosInIndex=%v", *curIndex, *curPosInIndex)
 		(*curPosInIndex)--
 		// if we leave *curIndex alone, then Next() will work properly even after the delete.
-		//p("deleteAt: pos is last case, after update: curIndex=%v, curPosInIndex=%v", *curIndex, *curPosInIndex)
+		p("deleteAt: pos is last case, after update: curIndex=%v, curPosInIndex=%v", *curIndex, *curPosInIndex)
 	default:
-		//p("middle...split")
+		p("middle...split")
 		//middle
 		// split into two, adding an interval16
 		new0 := interval16{
 			start: rc.iv[ci].start,
 			last:  rc.iv[ci].start + *curPosInIndex - 1}
 
+		new1start := int64(rc.iv[ci].start) + int64(*curPosInIndex) + 1
+		if new1start > int64(MaxUint16) {
+			panic("overflow?!?!")
+		}
 		new1 := interval16{
-			start: rc.iv[ci].start + *curPosInIndex + 1,
+			start: uint16(new1start),
 			last:  rc.iv[ci].last}
 
-		//p("new0 = %#v", new0)
-		//p("new1 = %#v", new1)
+		p("new0 = %#v", new0)
+		p("new1 = %#v", new1)
 
 		tail := append([]interval16{new0, new1}, rc.iv[ci+1:]...)
 		rc.iv = append(rc.iv[:ci], tail...)
@@ -987,11 +990,11 @@ func (rc *runContainer16) deleteAt(curIndex *int64, curPosInIndex *uint16, curSe
 
 }
 
-func have4Overlap16(astart, aendx, bstart, bendx int64) bool {
-	if aendx <= bstart {
+func have4Overlap16(astart, alast, bstart, blast int64) bool {
+	if int64(alast)+1 <= bstart {
 		return false
 	}
-	return bendx > astart
+	return int64(blast)+1 > astart
 }
 
 func intersectWithLeftover16(astart, alast, bstart, blast int64) (isOverlap, isLeftoverA, isLeftoverB bool, leftoverStart int64, intersection interval16) {
