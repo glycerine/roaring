@@ -688,7 +688,7 @@ func TestRleCoverageOddsAndEnds32(t *testing.T) {
 
 func TestRleStoringMax32(t *testing.T) {
 
-	Convey("Storing the MaxUint32 should be possible, because it may be necessary to do so--users will assume that any valid uint32 should be storable. The runContainer will just have to special case this by storing an rc.hasMaxUint32 flag, and knowing that this value needs its own special case to work.", t, func() {
+	Convey("Storing the MaxUint32 should be possible, because it may be necessary to do so--users will assume that any valid uint32 should be storable. In particular the smaller 16-bit version will definitely expect full access to all bits.", t, func() {
 
 		rc := newRunContainer32()
 		rc.Add(MaxUint32)
@@ -707,5 +707,13 @@ func TestRleStoringMax32(t *testing.T) {
 		So(rc.cardinality(), ShouldEqual, 1)
 		rc.removeKey(MaxUint32)
 		So(rc.cardinality(), ShouldEqual, 0)
+
+		rc.set(false, MaxUint32-2, MaxUint32-1, MaxUint32)
+		So(rc.cardinality(), ShouldEqual, 3)
+		So(rc.numIntervals(), ShouldEqual, 1)
+		rc.removeKey(MaxUint32 - 1)
+		So(rc.numIntervals(), ShouldEqual, 2)
+		So(rc.cardinality(), ShouldEqual, 2)
+
 	})
 }
