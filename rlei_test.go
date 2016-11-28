@@ -10,7 +10,7 @@ import (
 
 func TestRle16RandomIntersectAgainstOtherContainers010(t *testing.T) {
 
-	Convey("runIterator16 `and` operation against other container types should correctly do the intersection", t, func() {
+	Convey("runContainer16 `and` operation against other container types should correctly do the intersection", t, func() {
 		seed := int64(42)
 		p("seed is %v", seed)
 		rand.Seed(seed)
@@ -111,7 +111,7 @@ func TestRle16RandomIntersectAgainstOtherContainers010(t *testing.T) {
 
 func TestRle16RandomUnionAgainstOtherContainers011(t *testing.T) {
 
-	Convey("runIterator16 `or` operation against other container types should correctly do the intersection", t, func() {
+	Convey("runContainer16 `or` operation against other container types should correctly do the intersection", t, func() {
 		seed := int64(42)
 		p("seed is %v", seed)
 		rand.Seed(seed)
@@ -213,7 +213,7 @@ func TestRle16RandomUnionAgainstOtherContainers011(t *testing.T) {
 
 func TestRle16RandomInplaceUnionAgainstOtherContainers012(t *testing.T) {
 
-	Convey("runIterator16 `ior` inplace union operation against other container types should correctly do the intersection", t, func() {
+	Convey("runContainer16 `ior` inplace union operation against other container types should correctly do the intersection", t, func() {
 		seed := int64(42)
 		p("seed is %v", seed)
 		rand.Seed(seed)
@@ -319,7 +319,7 @@ func TestRle16RandomInplaceUnionAgainstOtherContainers012(t *testing.T) {
 
 func TestRle16RandomInplaceIntersectAgainstOtherContainers014(t *testing.T) {
 
-	Convey("runIterator16 `iand` inplace-and operation against other container types should correctly do the intersection", t, func() {
+	Convey("runContainer16 `iand` inplace-and operation against other container types should correctly do the intersection", t, func() {
 		seed := int64(42)
 		p("seed is %v", seed)
 		rand.Seed(seed)
@@ -424,7 +424,7 @@ func TestRle16RandomInplaceIntersectAgainstOtherContainers014(t *testing.T) {
 
 func TestRle16RemoveApi015(t *testing.T) {
 
-	Convey("runIterator16 `remove` (a minus b) should work", t, func() {
+	Convey("runContainer16 `remove` (a minus b) should work", t, func() {
 		seed := int64(42)
 		p("seed is %v", seed)
 		rand.Seed(seed)
@@ -508,7 +508,7 @@ func showArray16(a []uint16, name string) {
 
 func TestRle16RandomAndNot16(t *testing.T) {
 
-	Convey("runIterator16 `andNot` operation against other container types should correctly do the and-not operation", t, func() {
+	Convey("runContainer16 `andNot` operation against other container types should correctly do the and-not operation", t, func() {
 		seed := int64(42)
 		p("seed is %v", seed)
 		rand.Seed(seed)
@@ -610,7 +610,7 @@ func TestRle16RandomAndNot16(t *testing.T) {
 
 func TestRle16RandomInplaceAndNot017(t *testing.T) {
 
-	Convey("runIterator16 `iandNot` operation against other container types should correctly do the inplace-and-not operation", t, func() {
+	Convey("runContainer16 `iandNot` operation against other container types should correctly do the inplace-and-not operation", t, func() {
 		seed := int64(42)
 		p("seed is %v", seed)
 		rand.Seed(seed)
@@ -705,6 +705,72 @@ func TestRle16RandomInplaceAndNot017(t *testing.T) {
 				So(rc_vs_rcb_iandnot.getCardinality(), ShouldEqual, len(hashi))
 			}
 			p("done with randomized andNot() vs bitmapContainer and arrayContainer checks for trial %#v", tr)
+		}
+
+		for i := range trials {
+			tester(trials[i])
+		}
+
+	})
+}
+
+func TestRle16InversionOfIntervals018(t *testing.T) {
+
+	Convey("runContainer `invert` operation should do a NOT on the set of intervals, in-place", t, func() {
+		seed := int64(42)
+		p("seed is %v", seed)
+		rand.Seed(seed)
+
+		trials := []trial{
+			trial{n: 1000, percentFill: .90, ntrial: 1},
+		}
+
+		tester := func(tr trial) {
+			for j := 0; j < tr.ntrial; j++ {
+				p("TestRle16InversinoOfIntervals018 on check# j=%v", j)
+				ma := make(map[int]bool)
+				hashNotA := make(map[int]bool)
+
+				n := tr.n
+				a := []uint16{}
+
+				// hashNotA will be NOT ma
+				for i := 0; i < n; i++ {
+					hashNotA[i] = true
+				}
+
+				draw := int(float64(n) * tr.percentFill)
+				for i := 0; i < draw; i++ {
+					r0 := rand.Intn(n)
+					a = append(a, uint16(r0))
+					ma[r0] = true
+					hashNotA[r0] = false
+				}
+
+				//showArray16(a, "a")
+				// too big to print: showHash("hashNotA is not a:", hashNotA)
+
+				// RunContainer's invert
+				rc := newRunContainer16FromVals(false, a...)
+
+				p("rc from a is %v", rc)
+
+				inv := rc.invert()
+
+				p("inv of a is %v", inv)
+
+				for k := 0; k < n; k++ {
+					if hashNotA[k] {
+						p("hashNotA has %v, checking inv", k)
+						So(inv.contains(uint16(k)), ShouldBeTrue)
+					}
+				}
+
+				// skip for now, too big to do 2^16-1
+				//p("checking for cardinality agreement: inv is %v, len(hashNotA) is %v", inv.getCardinality(), len(hashNotA))
+				//So(inv.getCardinality(), ShouldEqual, len(hashNotA))
+			}
+			p("done with randomized invert() check for trial %#v", tr)
 		}
 
 		for i := range trials {
