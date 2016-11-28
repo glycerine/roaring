@@ -255,11 +255,11 @@ func (rb *Bitmap) Add(x uint32) {
 	if i >= 0 {
 		var c container
 		c = ra.getWritableContainerAtIndex(i)
-		c = c.add(lowbits(x))
+		c = c.iaddReturnMinimized(lowbits(x))
 		rb.highlowcontainer.setContainerAtIndex(i, c)
 	} else {
 		newac := newArrayContainer()
-		rb.highlowcontainer.insertNewKeyValueAt(-i-1, hb, newac.add(lowbits(x)))
+		rb.highlowcontainer.insertNewKeyValueAt(-i-1, hb, newac.iaddReturnMinimized(lowbits(x)))
 	}
 }
 
@@ -271,12 +271,12 @@ func (rb *Bitmap) addwithptr(x uint32) (int, container) {
 	var c container
 	if i >= 0 {
 		c = ra.getWritableContainerAtIndex(i)
-		c = c.add(lowbits(x))
+		c = c.iaddReturnMinimized(lowbits(x))
 		rb.highlowcontainer.setContainerAtIndex(i, c)
 		return i, c
 	}
 	newac := newArrayContainer()
-	c = newac.add(lowbits(x))
+	c = newac.iaddReturnMinimized(lowbits(x))
 	rb.highlowcontainer.insertNewKeyValueAt(-i-1, hb, c)
 	return -i - 1, c
 }
@@ -289,12 +289,12 @@ func (rb *Bitmap) CheckedAdd(x uint32) bool {
 	if i >= 0 {
 		C := rb.highlowcontainer.getWritableContainerAtIndex(i)
 		oldcard := C.getCardinality()
-		C = C.add(lowbits(x))
+		C = C.iaddReturnMinimized(lowbits(x))
 		rb.highlowcontainer.setContainerAtIndex(i, C)
 		return C.getCardinality() > oldcard
 	}
 	newac := newArrayContainer()
-	rb.highlowcontainer.insertNewKeyValueAt(-i-1, hb, newac.add(lowbits(x)))
+	rb.highlowcontainer.insertNewKeyValueAt(-i-1, hb, newac.iaddReturnMinimized(lowbits(x)))
 	return true
 
 }
@@ -309,8 +309,8 @@ func (rb *Bitmap) Remove(x uint32) {
 	hb := highbits(x)
 	i := rb.highlowcontainer.getIndex(hb)
 	if i >= 0 {
-		c := rb.highlowcontainer.getWritableContainerAtIndex(i).remove(lowbits(x))
-		rb.highlowcontainer.setContainerAtIndex(i, c.remove(lowbits(x)))
+		c := rb.highlowcontainer.getWritableContainerAtIndex(i).iremoveReturnMinimized(lowbits(x))
+		rb.highlowcontainer.setContainerAtIndex(i, c.iremoveReturnMinimized(lowbits(x)))
 		if rb.highlowcontainer.getContainerAtIndex(i).getCardinality() == 0 {
 			rb.highlowcontainer.removeAtIndex(i)
 		}
@@ -325,7 +325,7 @@ func (rb *Bitmap) CheckedRemove(x uint32) bool {
 	if i >= 0 {
 		C := rb.highlowcontainer.getWritableContainerAtIndex(i)
 		oldcard := C.getCardinality()
-		C = C.remove(lowbits(x))
+		C = C.iremoveReturnMinimized(lowbits(x))
 		rb.highlowcontainer.setContainerAtIndex(i, C)
 		if rb.highlowcontainer.getContainerAtIndex(i).getCardinality() == 0 {
 			rb.highlowcontainer.removeAtIndex(i)
@@ -886,7 +886,7 @@ func (rb *Bitmap) AddMany(dat []uint32) {
 	idx, c := rb.addwithptr(prev)
 	for _, i := range dat[1:] {
 		if highbits(prev) == highbits(i) {
-			c = c.add(lowbits(i))
+			c = c.iaddReturnMinimized(lowbits(i))
 			rb.highlowcontainer.setContainerAtIndex(idx, c)
 		} else {
 			idx, c = rb.addwithptr(i)

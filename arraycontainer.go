@@ -181,7 +181,29 @@ func (ac *arrayContainer) toBitmapContainer() *bitmapContainer {
 	return bc
 
 }
-func (ac *arrayContainer) add(x uint16) container {
+func (ac *arrayContainer) iadd(x uint16) (wasNew bool) {
+	// Special case adding to the end of the container.
+	l := len(ac.content)
+	if l > 0 && l < arrayDefaultMaxSize && ac.content[l-1] < x {
+		ac.content = append(ac.content, x)
+		return true
+	}
+
+	loc := binarySearch(ac.content, x)
+
+	if loc < 0 {
+		s := ac.content
+		i := -loc - 1
+		s = append(s, 0)
+		copy(s[i+1:], s[i:])
+		s[i] = x
+		ac.content = s
+		return true
+	}
+	return false
+}
+
+func (ac *arrayContainer) iaddReturnMinimized(x uint16) container {
 	// Special case adding to the end of the container.
 	l := len(ac.content)
 	if l > 0 && l < arrayDefaultMaxSize && ac.content[l-1] < x {
@@ -194,7 +216,7 @@ func (ac *arrayContainer) add(x uint16) container {
 	if loc < 0 {
 		if len(ac.content) >= arrayDefaultMaxSize {
 			a := ac.toBitmapContainer()
-			a.add(x)
+			a.iadd(x)
 			return a
 		}
 		s := ac.content
@@ -207,13 +229,21 @@ func (ac *arrayContainer) add(x uint16) container {
 	return ac
 }
 
-func (ac *arrayContainer) iremove(x uint16) {
+// iremoveReturnMinimized is allowed to change the return type to minimize storage.
+func (ac *arrayContainer) iremoveReturnMinimized(x uint16) container {
+	ac.iremove(x)
+	return ac
+}
+
+func (ac *arrayContainer) iremove(x uint16) bool {
 	loc := binarySearch(ac.content, x)
 	if loc >= 0 {
 		s := ac.content
 		s = append(s[:loc], s[loc+1:]...)
 		ac.content = s
+		return true
 	}
+	return false
 }
 
 func (ac *arrayContainer) remove(x uint16) container {

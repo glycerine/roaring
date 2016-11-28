@@ -99,35 +99,38 @@ func (bc *bitmapContainer) equals(o interface{}) bool {
 	return false
 }
 
-func (bc *bitmapContainer) add(i uint16) container {
+func (bc *bitmapContainer) iaddReturnMinimized(i uint16) container {
+	bc.iadd(i)
+	return bc
+}
+
+func (bc *bitmapContainer) iadd(i uint16) bool {
 	x := int(i)
 	previous := bc.bitmap[x/64]
 	mask := uint64(1) << (uint(x) % 64)
 	newb := previous | mask
 	bc.bitmap[x/64] = newb
 	bc.cardinality += int(uint64(previous^newb) >> (uint(x) % 64))
+	return newb != previous
+}
+
+func (bc *bitmapContainer) iremoveReturnMinimized(i uint16) container {
+	if bc.iremove(i) {
+		if bc.cardinality == arrayDefaultMaxSize {
+			return bc.toArrayContainer()
+		}
+	}
 	return bc
 }
 
-func (bc *bitmapContainer) remove(i uint16) container {
-	out := &bitmapContainer{bc.cardinality, make([]uint64, len(bc.bitmap))}
-	copy(out.bitmap, bc.bitmap[:])
-
-	if out.contains(i) {
-		out.cardinality--
-		out.bitmap[i/64] &^= (uint64(1) << (i % 64))
-		if out.cardinality == arrayDefaultMaxSize {
-			return out.toArrayContainer()
-		}
-	}
-	return out
-}
-
-func (bc *bitmapContainer) iremove(i uint16) {
+// iremove returns true is i was found.
+func (bc *bitmapContainer) iremove(i uint16) bool {
 	if bc.contains(i) {
 		bc.cardinality--
 		bc.bitmap[i/64] &^= (uint64(1) << (i % 64))
+		return true
 	}
+	return false
 }
 
 func (bc *bitmapContainer) getCardinality() int {

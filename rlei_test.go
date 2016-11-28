@@ -59,13 +59,13 @@ func TestRle16RandomIntersectAgainstOtherContainers010(t *testing.T) {
 				// vs bitmapContainer
 				bc := newBitmapContainer()
 				for _, bv := range b {
-					bc.add(bv)
+					bc.iadd(bv)
 				}
 
 				// vs arrayContainer
 				ac := newArrayContainer()
 				for _, bv := range b {
-					ac.add(bv)
+					ac.iadd(bv)
 				}
 
 				// vs runContainer
@@ -161,13 +161,13 @@ func TestRle16RandomUnionAgainstOtherContainers011(t *testing.T) {
 				// vs bitmapContainer
 				bc := newBitmapContainer()
 				for _, bv := range b {
-					bc.add(bv)
+					bc.iadd(bv)
 				}
 
 				// vs arrayContainer
 				ac := newArrayContainer()
 				for _, bv := range b {
-					ac.add(bv)
+					ac.iadd(bv)
 				}
 
 				// vs runContainer
@@ -267,13 +267,13 @@ func TestRle16RandomInplaceUnionAgainstOtherContainers012(t *testing.T) {
 				// vs bitmapContainer
 				bc := newBitmapContainer()
 				for _, bv := range b {
-					bc.add(bv)
+					bc.iadd(bv)
 				}
 
 				// vs arrayContainer
 				ac := newArrayContainer()
 				for _, bv := range b {
-					ac.add(bv)
+					ac.iadd(bv)
 				}
 
 				// vs runContainer
@@ -368,13 +368,13 @@ func TestRle16RandomInplaceIntersectAgainstOtherContainers014(t *testing.T) {
 				// vs bitmapContainer
 				bc := newBitmapContainer()
 				for _, bv := range b {
-					bc.add(bv)
+					bc.iadd(bv)
 				}
 
 				// vs arrayContainer
 				ac := newArrayContainer()
 				for _, bv := range b {
-					ac.add(bv)
+					ac.iadd(bv)
 				}
 
 				// vs runContainer
@@ -423,8 +423,6 @@ func TestRle16RandomInplaceIntersectAgainstOtherContainers014(t *testing.T) {
 }
 
 func TestRle16RemoveApi015(t *testing.T) {
-
-	rleVerbose = true
 
 	Convey("runIterator16 `remove` (a minus b) should work", t, func() {
 		seed := int64(42)

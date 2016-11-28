@@ -11,7 +11,7 @@ func TestArrayContainerTransition(t *testing.T) {
 	v := container(newArrayContainer())
 	arraytype := reflect.TypeOf(v)
 	for i := 0; i < arrayDefaultMaxSize; i++ {
-		v = v.add(uint16(i))
+		v = v.iaddReturnMinimized(uint16(i))
 	}
 	if v.getCardinality() != arrayDefaultMaxSize {
 		t.Errorf("Bad cardinality.")
@@ -20,7 +20,7 @@ func TestArrayContainerTransition(t *testing.T) {
 		t.Errorf("Should be an array.")
 	}
 	for i := 0; i < arrayDefaultMaxSize; i++ {
-		v = v.add(uint16(i))
+		v = v.iaddReturnMinimized(uint16(i))
 	}
 	if v.getCardinality() != arrayDefaultMaxSize {
 		t.Errorf("Bad cardinality.")
@@ -28,14 +28,14 @@ func TestArrayContainerTransition(t *testing.T) {
 	if reflect.TypeOf(v) != arraytype {
 		t.Errorf("Should be an array.")
 	}
-	v = v.add(uint16(arrayDefaultMaxSize))
+	v = v.iaddReturnMinimized(uint16(arrayDefaultMaxSize))
 	if v.getCardinality() != arrayDefaultMaxSize+1 {
 		t.Errorf("Bad cardinality.")
 	}
 	if reflect.TypeOf(v) == arraytype {
 		t.Errorf("Should be a bitmap.")
 	}
-	v = v.remove(uint16(arrayDefaultMaxSize))
+	v = v.iremoveReturnMinimized(uint16(arrayDefaultMaxSize))
 	if v.getCardinality() != arrayDefaultMaxSize {
 		t.Errorf("Bad cardinality.")
 	}
@@ -46,9 +46,9 @@ func TestArrayContainerTransition(t *testing.T) {
 
 func TestArrayContainerRank(t *testing.T) {
 	v := container(newArrayContainer())
-	v = v.add(10)
-	v = v.add(100)
-	v = v.add(1000)
+	v = v.iaddReturnMinimized(10)
+	v = v.iaddReturnMinimized(100)
+	v = v.iaddReturnMinimized(1000)
 	if v.getCardinality() != 3 {
 		t.Errorf("Bogus cardinality.")
 	}
@@ -78,7 +78,7 @@ func TestArrayContainerMassiveSetAndGet(t *testing.T) {
 	v := container(newArrayContainer())
 	for j := 0; j <= arrayDefaultMaxSize; j++ {
 
-		v = v.add(uint16(j))
+		v = v.iaddReturnMinimized(uint16(j))
 		if v.getCardinality() != 1+j {
 			t.Errorf("Bogus cardinality %d %d. ", v.getCardinality(), j)
 		}

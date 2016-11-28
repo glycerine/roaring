@@ -236,20 +236,22 @@ func (rc *runContainer16) equals(o interface{}) bool {
 	return false
 }
 
-func (rc *runContainer16) add(x uint16) container {
-	out := rc.Clone()
-	out.Add(x)
-	return out
+func (rc *runContainer16) iaddReturnMinimized(x uint16) container {
+	rc.Add(x)
+	return rc
 }
 
-func (rc *runContainer16) remove(x uint16) container {
-	out := rc.Clone()
-	out.removeKey(x)
-	return out
+func (rc *runContainer16) iadd(x uint16) (wasNew bool) {
+	return rc.Add(x)
 }
 
-func (rc *runContainer16) iremove(x uint16) {
+func (rc *runContainer16) iremoveReturnMinimized(x uint16) container {
 	rc.removeKey(x)
+	return rc
+}
+
+func (rc *runContainer16) iremove(x uint16) bool {
+	return rc.removeKey(x)
 }
 
 func (rc *runContainer16) or(a container) container {
@@ -269,7 +271,7 @@ func (rc *runContainer16) orBitmapContainer(bc *bitmapContainer) container {
 	out := bc.clone()
 	for _, p := range rc.iv {
 		for i := p.start; i <= p.last; i++ {
-			out.add(i)
+			out.iadd(i)
 		}
 	}
 	return out
@@ -280,7 +282,7 @@ func (rc *runContainer16) orArray(ac *arrayContainer) container {
 	out := ac.clone()
 	for _, p := range rc.iv {
 		for i := p.start; i <= p.last; i++ {
-			out.add(i)
+			out.iadd(i)
 		}
 	}
 	return out

@@ -13,11 +13,16 @@ type container interface {
 	iandNot(container) container // i stands for inplace
 	getCardinality() int
 	rank(uint16) int
-	add(uint16) container
+
+	iadd(x uint16) bool                   // inplace, returns true if x was new.
+	iaddReturnMinimized(uint16) container // may change return type to minimize storage.
+
 	//addRange(start, final int) container  // range is [firstOfRange,lastOfRange) (unused)
-	iaddRange(start, final int) container         // i stands for inplace, range is [firstOfRange,lastOfRange)
-	remove(uint16) container                      // copy and remove from returned copy
-	iremove(uint16)                               // inplace remove
+	iaddRange(start, final int) container // i stands for inplace, range is [firstOfRange,lastOfRange)
+
+	iremove(x uint16) bool                   // inplace, returns true if x was present.
+	iremoveReturnMinimized(uint16) container // may change return type to minimize storage.
+
 	not(start, final int) container               // range is [firstOfRange,lastOfRange)
 	inot(firstOfRange, lastOfRange int) container // i stands for inplace, range is [firstOfRange,lastOfRange)
 	xor(r container) container

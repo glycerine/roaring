@@ -770,7 +770,7 @@ func runContainer16SerializedSizeInBytes(numRuns int) int {
 }
 
 // Add adds a single value k to the set.
-func (rc *runContainer16) Add(k uint16) {
+func (rc *runContainer16) Add(k uint16) (wasNew bool) {
 	// TODO comment from runContainer16.java:
 	// it might be better and simpler to do return
 	// toBitmapOrArrayContainer(getCardinality()).add(k)
@@ -784,6 +784,8 @@ func (rc *runContainer16) Add(k uint16) {
 	if present {
 		return // already there
 	}
+	wasNew = true
+
 	// increment card if it is cached already
 	if rc.card > 0 {
 		rc.card++
@@ -848,6 +850,7 @@ func (rc *runContainer16) Add(k uint16) {
 	// k makes a standalone new interval16, inserted in the middle
 	tail := append([]interval16{interval16{start: k, last: k}}, rc.iv[right:]...)
 	rc.iv = append(rc.iv[:left+1], tail...)
+	return
 }
 
 // RunIterator16 advice: you must call Next() at least once
