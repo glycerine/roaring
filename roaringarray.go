@@ -12,6 +12,8 @@ type container interface {
 	andNot(container) container
 	iandNot(container) container // i stands for inplace
 	getCardinality() int
+	// rank returns the number of integers that are
+	// smaller or equal to x. rank(infinity) would be getCardinality().
 	rank(uint16) int
 
 	iadd(x uint16) bool                   // inplace, returns true if x was new.

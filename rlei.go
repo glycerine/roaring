@@ -313,17 +313,9 @@ func (rc *runContainer16) lazyOR(a container) container {
 }
 
 func (rc *runContainer16) intersects(a container) bool {
-	// TODO part of container interface, must implement.
-	/*
-		switch a.(type) {
-		case *runContainer16:
-			return ac.intersectsArray(a.(*runContainer16))
-		case *bitmapContainer:
-			return a.intersects(ac)
-		}
-		panic("unsupported container type")
-	*/
-	return false
+	// TODO: optimize by doing inplace/less allocation, possibly?
+	isect := rc.and(a)
+	return isect.getCardinality() > 0
 }
 
 func (rc *runContainer16) xor(a container) container {
@@ -363,16 +355,28 @@ func (rc *runContainer16) getCardinality() int {
 }
 
 func (rc *runContainer16) rank(x uint16) int {
-	// TODO part of container interface, must implement.
-	/*
-		answer := binarySearch(ac.content, x)
-		if answer >= 0 {
-			return answer + 1
-		}
-		return -answer - 1
+	n := int64(len(rc.iv))
+	xx := int64(x)
+	w, already, _ := rc.search(xx, nil)
+	if w < 0 {
+		return 0
+	}
+	if w == n-1 {
+		return rc.getCardinality()
+	}
 
-	*/
-	return 0 // TODO
+	var rnk int64
+	if !already {
+		for i := int64(0); i <= w; i++ {
+			rnk += rc.iv[i].runlen()
+		}
+		return int(rnk)
+	}
+	for i := int64(0); i < w; i++ {
+		rnk += rc.iv[i].runlen()
+	}
+	rnk += int64(x-rc.iv[w].start) + 1
+	return int(rnk)
 }
 
 func (rc *runContainer16) selectInt(x uint16) int {

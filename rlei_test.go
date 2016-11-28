@@ -873,3 +873,33 @@ func TestRle16SubtractionOfIntervals019(t *testing.T) {
 
 	})
 }
+
+func TestRle16Rank020(t *testing.T) {
+	v := container(newRunContainer16())
+	v = v.iaddReturnMinimized(10)
+	v = v.iaddReturnMinimized(100)
+	v = v.iaddReturnMinimized(1000)
+	if v.getCardinality() != 3 {
+		t.Errorf("Bogus cardinality.")
+	}
+	for i := 0; i <= arrayDefaultMaxSize; i++ {
+		thisrank := v.rank(uint16(i))
+		if i < 10 {
+			if thisrank != 0 {
+				t.Errorf("At %d should be zero but is %d ", i, thisrank)
+			}
+		} else if i < 100 {
+			if thisrank != 1 {
+				t.Errorf("At %d should be zero but is %d ", i, thisrank)
+			}
+		} else if i < 1000 {
+			if thisrank != 2 {
+				t.Errorf("At %d should be zero but is %d ", i, thisrank)
+			}
+		} else {
+			if thisrank != 3 {
+				t.Errorf("At %d should be zero but is %d ", i, thisrank)
+			}
+		}
+	}
+}
