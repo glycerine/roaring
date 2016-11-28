@@ -207,14 +207,26 @@ func (ac *arrayContainer) add(x uint16) container {
 	return ac
 }
 
-func (ac *arrayContainer) remove(x uint16) container {
+func (ac *arrayContainer) iremove(x uint16) {
 	loc := binarySearch(ac.content, x)
 	if loc >= 0 {
 		s := ac.content
 		s = append(s[:loc], s[loc+1:]...)
 		ac.content = s
 	}
-	return ac
+}
+
+func (ac *arrayContainer) remove(x uint16) container {
+	out := &arrayContainer{make([]uint16, len(ac.content))}
+	copy(out.content, ac.content[:])
+
+	loc := binarySearch(out.content, x)
+	if loc >= 0 {
+		s := out.content
+		s = append(s[:loc], s[loc+1:]...)
+		out.content = s
+	}
+	return out
 }
 
 func (ac *arrayContainer) or(a container) container {

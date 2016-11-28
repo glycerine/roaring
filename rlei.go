@@ -248,6 +248,10 @@ func (rc *runContainer16) remove(x uint16) container {
 	return out
 }
 
+func (rc *runContainer16) iremove(x uint16) {
+	rc.removeKey(x)
+}
+
 func (rc *runContainer16) or(a container) container {
 	switch c := a.(type) {
 	case *runContainer16:

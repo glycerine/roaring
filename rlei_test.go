@@ -213,8 +213,6 @@ func TestRle16RandomUnionAgainstOtherContainers011(t *testing.T) {
 
 func TestRle16RandomInplaceUnionAgainstOtherContainers012(t *testing.T) {
 
-	rleVerbose = true
-
 	Convey("runIterator16 `ior` inplace union operation against other container types should correctly do the intersection", t, func() {
 		seed := int64(42)
 		p("seed is %v", seed)
@@ -415,6 +413,83 @@ func TestRle16RandomInplaceIntersectAgainstOtherContainers014(t *testing.T) {
 				So(rc_vs_rcb_isect.getCardinality(), ShouldEqual, len(hashi))
 			}
 			p("done with randomized and() vs bitmapContainer and arrayContainer checks for trial %#v", tr)
+		}
+
+		for i := range trials {
+			tester(trials[i])
+		}
+
+	})
+}
+
+func TestRle16RemoveApi015(t *testing.T) {
+
+	rleVerbose = true
+
+	Convey("runIterator16 `remove` (a minus b) should work", t, func() {
+		seed := int64(42)
+		p("seed is %v", seed)
+		rand.Seed(seed)
+
+		trials := []trial{
+			trial{n: 100, percentFill: .95, ntrial: 1},
+		}
+
+		tester := func(tr trial) {
+			for j := 0; j < tr.ntrial; j++ {
+				p("TestRle16RemoveApi015 on check# j=%v", j)
+				ma := make(map[int]bool)
+				mb := make(map[int]bool)
+
+				n := tr.n
+				a := []uint16{}
+				b := []uint16{}
+
+				draw := int(float64(n) * tr.percentFill)
+				for i := 0; i < draw; i++ {
+					r0 := rand.Intn(n)
+					a = append(a, uint16(r0))
+					ma[r0] = true
+
+					r1 := rand.Intn(n)
+					b = append(b, uint16(r1))
+					mb[r1] = true
+				}
+
+				showArray16(a, "a")
+				showArray16(b, "b")
+
+				// hash version of remove:
+				hashrm := make(map[int]bool)
+				for k := range ma {
+					hashrm[k] = true
+				}
+				for k := range mb {
+					delete(hashrm, k)
+				}
+
+				// RunContainer's remove
+				rc := newRunContainer16FromVals(false, a...)
+
+				p("rc from a, pre-remove, is %v", rc)
+
+				for k := range mb {
+					rc.iremove(uint16(k))
+				}
+
+				p("rc from a, post-iremove, is %v", rc)
+
+				showHash("correct answer is hashrm", hashrm)
+
+				for k := range hashrm {
+					p("hashrm has %v, checking in rc", k)
+					So(rc.contains(uint16(k)), ShouldBeTrue)
+				}
+
+				p("checking for cardinality agreement: rc is %v, len(hashrm) is %v", rc.getCardinality(), len(hashrm))
+				So(rc.getCardinality(), ShouldEqual, len(hashrm))
+			}
+			p("done with randomized remove() checks for trial %#v", tr)
 		}
 
 		for i := range trials {

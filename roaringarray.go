@@ -15,8 +15,9 @@ type container interface {
 	rank(uint16) int
 	add(uint16) container
 	//addRange(start, final int) container  // range is [firstOfRange,lastOfRange) (unused)
-	iaddRange(start, final int) container // i stands for inplace, range is [firstOfRange,lastOfRange)
-	remove(uint16) container
+	iaddRange(start, final int) container         // i stands for inplace, range is [firstOfRange,lastOfRange)
+	remove(uint16) container                      // copy and remove from returned copy
+	iremove(uint16)                               // inplace remove
 	not(start, final int) container               // range is [firstOfRange,lastOfRange)
 	inot(firstOfRange, lastOfRange int) container // i stands for inplace, range is [firstOfRange,lastOfRange)
 	xor(r container) container
