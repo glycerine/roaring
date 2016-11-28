@@ -832,6 +832,8 @@ func TestRle16SubtractionOfIntervals019(t *testing.T) {
 				rc := newRunContainer16FromVals(false, a...)
 				rcb := newRunContainer16FromVals(false, b...)
 
+				abkup := rc.Clone()
+
 				p("rc from a is %v", rc)
 				p("rc.cardinality = %v", rc.cardinality())
 				p("rcb from b is %v", rcb)
@@ -842,14 +844,24 @@ func TestRle16SubtractionOfIntervals019(t *testing.T) {
 					rc.isubtract(interval16{start: nx, last: nx})
 				}
 
+				// also check full interval subtraction
+				for _, p := range rcb.iv {
+					abkup.isubtract(p)
+				}
+
 				p("rc = a - b; has (card=%v), is %v", rc.cardinality(), rc)
+				p("abkup = a - b; has (card=%v), is %v", abkup.cardinality(), abkup)
 
 				for k := range hashAminusB {
-					p("hashAminusB has element %v, checking rc (which is A - B)", k)
+					p("hashAminusB has element %v, checking rc and abkup (which are/should be: A - B)", k)
 					So(rc.contains(uint16(k)), ShouldBeTrue)
+					So(abkup.contains(uint16(k)), ShouldBeTrue)
 				}
 				p("checking for cardinality agreement: sub is %v, len(hashAminusB) is %v", rc.getCardinality(), len(hashAminusB))
 				So(rc.getCardinality(), ShouldEqual, len(hashAminusB))
+				p("checking for cardinality agreement: sub is %v, len(hashAminusB) is %v", abkup.getCardinality(), len(hashAminusB))
+				So(abkup.getCardinality(), ShouldEqual, len(hashAminusB))
+
 			}
 			p("done with randomized subtract() check for trial %#v", tr)
 		}
