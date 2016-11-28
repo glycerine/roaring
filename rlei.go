@@ -123,25 +123,12 @@ func (rc *runContainer16) fillLeastSignificant16bits(x []uint32, i int, mask uin
 }
 
 func (rc *runContainer16) getShortIterator() shortIterable {
-	// TODO part of container interface, must implement.
-	return &shortIterator{}
-	//	return &shortIterator{ac.content, 0}
+	return rc.NewRunIterator16()
 }
 
 func (rc *runContainer16) getSizeInBytes() int {
-	// TODO part of container interface, must implement.
-	/*
-		// unsafe.Sizeof calculates the memory used by the top level of the slice
-		// descriptor - not including the size of the memory referenced by the slice.
-		// http://golang.org/pkg/unsafe/#Sizeof
-		return ac.getCardinality()*2 + int(unsafe.Sizeof(ac.content))
-	*/
-	return 0 // TODO
+	return baseRc16Size + perIntervalRc16Size*len(rc.iv)
 }
-
-// serializedSizeInBytes returns the number of bytes of memory
-// required by this runContainer16.
-//func (rc *runContainer16) serializedSizeInBytes() int
 
 // add the values in the range [firstOfRange,lastofRange)
 func (rc *runContainer16) iaddRange(firstOfRange, lastOfRange int) container {

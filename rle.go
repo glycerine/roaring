@@ -903,6 +903,13 @@ func (rc *runContainer32) NewRunIterator32() *RunIterator32 {
 	return &RunIterator32{rc: rc, curIndex: -1}
 }
 
+func (ri *RunIterator32) hasNext() bool {
+	return ri.HasNext()
+}
+func (ri *RunIterator32) next() uint32 {
+	return ri.Next()
+}
+
 // HasNext returns false if calling Next will panic. It
 // returns true when there is at least one more value
 // available in the iteration sequence.
