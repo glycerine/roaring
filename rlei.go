@@ -104,9 +104,15 @@ func (rc *runContainer16) andNot(a container) container {
 	case *bitmapContainer:
 		return rc.andNotBitmap(c)
 	case *runContainer16:
-		return rc.andNot(c)
+		return rc.andNotRunContainer16(c)
 	}
 	panic("unsupported container type")
+}
+
+func (rc *runContainer16) andNotRunContainer16(x2 *runContainer16) container {
+	rcb := rc.toBitmapContainer()
+	x2b := x2.toBitmapContainer()
+	return rcb.andNotBitmap(x2b)
 }
 
 func (rc *runContainer16) fillLeastSignificant16bits(x []uint32, i int, mask uint32) {

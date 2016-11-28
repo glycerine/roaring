@@ -505,3 +505,105 @@ func showArray16(a []uint16, name string) {
 	}
 	p("%s is '%v'", name, stringA)
 }
+
+func TestRle16RandomAndNot16(t *testing.T) {
+
+	Convey("runIterator16 `andNot` operation against other container types should correctly do the and-not operation", t, func() {
+		seed := int64(42)
+		p("seed is %v", seed)
+		rand.Seed(seed)
+
+		trials := []trial{
+			trial{n: 1000, percentFill: .95, ntrial: 2},
+		}
+
+		tester := func(tr trial) {
+			for j := 0; j < tr.ntrial; j++ {
+				p("TestRle16RandomAndNot16 on check# j=%v", j)
+				ma := make(map[int]bool)
+				mb := make(map[int]bool)
+
+				n := tr.n
+				a := []uint16{}
+				b := []uint16{}
+
+				draw := int(float64(n) * tr.percentFill)
+				for i := 0; i < draw; i++ {
+					r0 := rand.Intn(n)
+					a = append(a, uint16(r0))
+					ma[r0] = true
+
+					r1 := rand.Intn(n)
+					b = append(b, uint16(r1))
+					mb[r1] = true
+				}
+
+				showArray16(a, "a")
+				showArray16(b, "b")
+
+				// hash version of and-not
+				hashi := make(map[int]bool)
+				for k := range ma {
+					hashi[k] = true
+				}
+				for k := range mb {
+					delete(hashi, k)
+				}
+
+				// RunContainer's and-not
+				rc := newRunContainer16FromVals(false, a...)
+
+				p("rc from a is %v", rc)
+
+				// vs bitmapContainer
+				bc := newBitmapContainer()
+				for _, bv := range b {
+					bc.iadd(bv)
+				}
+
+				// vs arrayContainer
+				ac := newArrayContainer()
+				for _, bv := range b {
+					ac.iadd(bv)
+				}
+
+				// vs runContainer
+				rcb := newRunContainer16FromVals(false, b...)
+
+				rc_vs_bc_andnot := rc.andNot(bc)
+				rc_vs_ac_andnot := rc.andNot(ac)
+				rc_vs_rcb_andnot := rc.andNot(rcb)
+
+				p("rc_vs_bc_andnot is %v", rc_vs_bc_andnot)
+				p("rc_vs_ac_andnot is %v", rc_vs_ac_andnot)
+				p("rc_vs_rcb_andnot is %v", rc_vs_rcb_andnot)
+
+				showHash("hashi", hashi)
+
+				for k := range hashi {
+					p("hashi has %v, checking in rc_vs_bc_andnot", k)
+					So(rc_vs_bc_andnot.contains(uint16(k)), ShouldBeTrue)
+
+					p("hashi has %v, checking in rc_vs_ac_andnot", k)
+					So(rc_vs_ac_andnot.contains(uint16(k)), ShouldBeTrue)
+
+					p("hashi has %v, checking in rc_vs_rcb_andnot", k)
+					So(rc_vs_rcb_andnot.contains(uint16(k)), ShouldBeTrue)
+				}
+
+				p("checking for cardinality agreement: rc_vs_bc_andnot is %v, len(hashi) is %v", rc_vs_bc_andnot.getCardinality(), len(hashi))
+				p("checking for cardinality agreement: rc_vs_ac_andnot is %v, len(hashi) is %v", rc_vs_ac_andnot.getCardinality(), len(hashi))
+				p("checking for cardinality agreement: rc_vs_rcb_andnot is %v, len(hashi) is %v", rc_vs_rcb_andnot.getCardinality(), len(hashi))
+				So(rc_vs_bc_andnot.getCardinality(), ShouldEqual, len(hashi))
+				So(rc_vs_ac_andnot.getCardinality(), ShouldEqual, len(hashi))
+				So(rc_vs_rcb_andnot.getCardinality(), ShouldEqual, len(hashi))
+			}
+			p("done with randomized andNot() vs bitmapContainer and arrayContainer checks for trial %#v", tr)
+		}
+
+		for i := range trials {
+			tester(trials[i])
+		}
+
+	})
+}
