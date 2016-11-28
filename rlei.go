@@ -130,82 +130,46 @@ func (rc *runContainer16) getSizeInBytes() int {
 	return baseRc16Size + perIntervalRc16Size*len(rc.iv)
 }
 
-// add the values in the range [firstOfRange,lastofRange)
+// add the values in the range [firstOfRange,lastofRange). lastofRange
+// is still abe to express 2^16 because it is an int not an uint16.
 func (rc *runContainer16) iaddRange(firstOfRange, lastOfRange int) container {
-	// TODO part of container interface, must implement.
-	/*	if firstOfRange >= lastOfRange {
-			return ac
-		}
-		indexstart := binarySearch(ac.content, uint16(firstOfRange))
-		if indexstart < 0 {
-			indexstart = -indexstart - 1
-		}
-		indexend := binarySearch(ac.content, uint16(lastOfRange-1))
-		if indexend < 0 {
-			indexend = -indexend - 1
-		} else {
-			indexend++
-		}
-		rangelength := lastOfRange - firstOfRange
-		newcardinality := indexstart + (ac.getCardinality() - indexend) + rangelength
-		if newcardinality > arrayDefaultMaxSize {
-			a := ac.toBitmapContainer()
-			return a.iaddRange(firstOfRange, lastOfRange)
-		}
-		if cap(ac.content) < newcardinality {
-			tmp := make([]uint16, newcardinality, newcardinality)
-			copy(tmp[:indexstart], ac.content[:indexstart])
-			copy(tmp[indexstart+rangelength:], ac.content[indexend:])
-
-			ac.content = tmp
-		} else {
-			ac.content = ac.content[:newcardinality]
-			copy(ac.content[indexstart+rangelength:], ac.content[indexend:])
-
-		}
-		for k := 0; k < rangelength; k++ {
-			ac.content[k+indexstart] = uint16(firstOfRange + k)
-		}
-		return ac
-	*/
-	return nil
+	addme := newRunContainer16TakeOwnership([]interval16{
+		{
+			start: uint16(firstOfRange),
+			last:  uint16(lastOfRange - 1),
+		},
+	})
+	*rc = *rc.union(addme)
+	return rc
 }
 
 // remove the values in the range [firstOfRange,lastOfRange)
 func (rc *runContainer16) iremoveRange(firstOfRange, lastOfRange int) container {
-	// TODO part of container interface, must implement.
-	/*	if firstOfRange >= lastOfRange {
-			return ac
-		}
-		indexstart := binarySearch(ac.content, uint16(firstOfRange))
-		if indexstart < 0 {
-			indexstart = -indexstart - 1
-		}
-		indexend := binarySearch(ac.content, uint16(lastOfRange-1))
-		if indexend < 0 {
-			indexend = -indexend - 1
-		} else {
-			indexend++
-		}
-		rangelength := indexend - indexstart
-		answer := ac
-		copy(answer.content[indexstart:], ac.content[indexstart+rangelength:])
-		answer.content = answer.content[:ac.getCardinality()-rangelength]
-		return answer
-	*/
-	return nil
-
+	x := interval16{start: uint16(firstOfRange), last: uint16(lastOfRange - 1)}
+	rc.isubtract(x)
+	return rc
 }
 
-// flip the values in the range [firstOfRange,lastOfRange)
+// not flip the values in the range [firstOfRange,lastOfRange)
 func (rc *runContainer16) not(firstOfRange, lastOfRange int) container {
-	// TODO part of container interface, must implement.
-	/*	if firstOfRange >= lastOfRange {
-			return ac.clone()
-		}
-		return ac.notClose(firstOfRange, lastOfRange-1) // remove everything in [firstOfRange,lastOfRange-1]
-	*/
-	return nil
+	return rc.Not(firstOfRange, lastOfRange)
+}
+
+// Not flips the values in the range [firstOfRange,lastOfRange)
+func (rc *runContainer16) Not(firstOfRange, lastOfRange int) *runContainer16 {
+
+	if firstOfRange >= lastOfRange {
+		return rc.Clone()
+	}
+	x := interval16{start: uint16(firstOfRange), last: uint16(lastOfRange - 1)}
+	xs := []interval16{x}
+
+	isect := rc.intersect(newRunContainer16TakeOwnership(xs))
+	rc2 := rc.Clone()
+	rc2.isubtract(x)
+	invertedIsect := isect.invert()
+	rc2 = rc2.union(invertedIsect)
+	return rc2
 }
 
 // equals is not logical equals,  apparently from the array implementation,
@@ -389,13 +353,9 @@ func (rc *runContainer16) iandNot(a container) container {
 
 // flip the values in the range [firstOfRange,lastOfRange)
 func (rc *runContainer16) inot(firstOfRange, lastOfRange int) container {
-	// TODO part of container interface, must implement.
-	/*	if firstOfRange >= lastOfRange {
-			return ac
-		}
-		return ac.inotClose(firstOfRange, lastOfRange-1) // remove everything in [firstOfRange,lastOfRange-1]
-	*/
-	return nil
+	// TODO: minimize copies, do it all inplace; not() makes a copy.
+	rc = rc.Not(firstOfRange, lastOfRange)
+	return rc
 }
 
 func (rc *runContainer16) getCardinality() int {

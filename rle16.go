@@ -1168,3 +1168,128 @@ func (rc *runContainer16) invert() *runContainer16 {
 	}
 	return &runContainer16{iv: m}
 }
+
+func (cur interval16) subtractInterval(del interval16) (left []interval16, delcount int64) {
+
+	isect, isEmpty := intersectInterval16s(cur, del)
+
+	if isEmpty {
+		return nil, 0
+	}
+
+	switch {
+	case isect.start > cur.start && isect.last < cur.last:
+		// split into two
+		new0 := interval16{start: cur.start, last: isect.start - 1}
+		new1 := interval16{start: isect.last + 1, last: cur.last}
+		return []interval16{new0, new1}, isect.runlen()
+	case isect.start == cur.start:
+		// removal of only the first half or so of cur interval
+		return []interval16{{start: isect.last + 1, last: cur.last}}, isect.runlen()
+	default:
+		// isect.end == cur.end
+		// removal of only the last half or so of cur interval
+		return []interval16{{start: cur.start, last: isect.start - 1}}, isect.runlen()
+	}
+}
+
+func (rc *runContainer16) isubtract(del interval16) {
+
+	n := int64(len(rc.iv))
+	if n == 0 {
+		return // already done.
+	}
+
+	_, isEmpty := intersectInterval16s(
+		interval16{
+			start: rc.iv[0].start,
+			last:  rc.iv[n-1].last,
+		}, del)
+	if isEmpty {
+		return // done
+	}
+	// INVAR there is some intersection between rc and del
+	istart, startAlready, _ := rc.search(int64(del.start), nil)
+	ilast, lastAlready, _ := rc.search(int64(del.last), nil)
+
+	if istart == -1 {
+		if ilast == n-1 {
+			// discard it all
+			rc.iv = nil
+			rc.card = 0
+			return
+		}
+	}
+	// some intervals will remain
+
+	switch {
+	case startAlready && lastAlready:
+		rc.card = -1 // uncache it. lazy: don't compute unless we have to.
+		res0, _ := rc.iv[istart].subtractInterval(del)
+		res1, _ := rc.iv[ilast].subtractInterval(del)
+		pre := append(rc.iv[:istart], res0...)
+		pre2 := append(pre, res1...)
+		rc.iv = append(pre2, rc.iv[ilast+1:]...)
+		return
+
+	case !startAlready && !lastAlready:
+		// we get to discard whole intervals
+
+		// from the search() definition:
+
+		// if del.start is not present, then istart is
+		// set as follows:
+		//
+		//  a) istart == n-1 if del.start is beyond our
+		//     last interval16 in rc.iv;
+		//
+		//  b) istart == -1 if del.start is before our first
+		//     interval16 in rc.iv;
+		//
+		//  c) istart is set to the minimum index of rc.iv
+		//     which comes strictly before the del.start;
+		//     so  del.start > rc.iv[istart].last,
+		//     and  if istart+1 exists, then del.start < rc.iv[istart+1].startx
+
+		// if del.last is not present, then ilast is
+		// set as follows:
+		//
+		//  a) ilast == n-1 if del.last is beyond our
+		//     last interval16 in rc.iv;
+		//
+		//  b) ilast == -1 if del.last is before our first
+		//     interval16 in rc.iv;
+		//
+		//  c) ilast is set to the minimum index of rc.iv
+		//     which comes strictly before the del.last;
+		//     so  del.last > rc.iv[ilast].last,
+		//     and  if ilast+1 exists, then del.last < rc.iv[ilast+1].start
+
+		// INVAR: istart >= 0
+		pre := rc.iv[:istart+1]
+		if ilast == n-1 {
+			rc.iv = pre
+			rc.card = -1
+			return
+		}
+		// INVAR: ilast < n-1
+		post := rc.iv[ilast+1:]
+		rc.iv = append(pre, post...)
+		rc.card = -1
+		return
+
+	case startAlready && !lastAlready:
+		rc.card = -1
+		res0, _ := rc.iv[istart].subtractInterval(del)
+		pre := append(rc.iv[:istart], res0...)
+		rc.iv = append(pre, rc.iv[ilast+1:]...)
+		return
+
+	case !startAlready && lastAlready:
+		res1, _ := rc.iv[ilast].subtractInterval(del)
+		pre := append(rc.iv[:istart+1], res1...)
+		rc.iv = append(pre, rc.iv[ilast+1:]...)
+		rc.card = -1
+		return
+	}
+}
