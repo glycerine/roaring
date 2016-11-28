@@ -51,15 +51,50 @@ func (rc *runContainer16) andArray(ac *arrayContainer) container {
 }
 
 func (rc *runContainer16) iand(a container) container {
-	/*	switch a.(type) {
-		case *runContainer16:
-			return ac.iandArray(a.(*runContainer16))
-		case *bitmapContainer:
-			return ac.iandBitmap(a.(*bitmapContainer))
+	switch c := a.(type) {
+	case *runContainer16:
+		return rc.inplaceIntersect(c)
+	case *arrayContainer:
+		return rc.iandArray(c)
+	case *bitmapContainer:
+		return rc.iandBitmapContainer(c)
+	}
+	panic("unsupported container type")
+}
+
+func (rc *runContainer16) inplaceIntersect(rc2 *runContainer16) container {
+	// TODO: optimize by doing less allocation, possibly?
+	sect := rc.intersect(rc2)
+	*rc = *sect
+	return rc
+}
+
+func (rc *runContainer16) iandBitmapContainer(bc *bitmapContainer) container {
+	// TODO: optimize by doing less allocation, possibly?
+	out := newRunContainer16()
+	for _, p := range rc.iv {
+		for i := p.start; i <= p.last; i++ {
+			if bc.contains(i) {
+				out.Add(i)
+			}
 		}
-		panic("unsupported container type")
-	*/
-	return nil
+	}
+	*rc = *out
+	return rc
+}
+
+func (rc *runContainer16) iandArray(ac *arrayContainer) container {
+	// TODO: optimize by doing less allocation, possibly?
+	out := newRunContainer16()
+	for _, p := range rc.iv {
+		for i := p.start; i <= p.last; i++ {
+			if ac.contains(i) {
+				out.Add(i)
+			}
+		}
+	}
+	*rc = *out
+	return rc
 }
 
 func (rc *runContainer16) andNot(a container) container {
@@ -248,15 +283,41 @@ func (rc *runContainer16) orArray(ac *arrayContainer) container {
 }
 
 func (rc *runContainer16) ior(a container) container {
-	/*	switch a.(type) {
-		case *runContainer16:
-			return ac.orArray(a.(*runContainer16))
-		case *bitmapContainer:
-			return a.ior(ac)
+	switch c := a.(type) {
+	case *runContainer16:
+		return rc.inplaceUnion(c)
+	case *arrayContainer:
+		return rc.iorArray(c)
+	case *bitmapContainer:
+		return rc.iorBitmapContainer(c)
+	}
+	panic("unsupported container type")
+}
+
+func (rc *runContainer16) inplaceUnion(rc2 *runContainer16) container {
+	for _, p := range rc2.iv {
+		for i := p.start; i <= p.last; i++ {
+			rc.Add(i)
 		}
-		panic("unsupported container type")
-	*/
-	return nil
+	}
+	return rc
+}
+
+func (rc *runContainer16) iorBitmapContainer(bc *bitmapContainer) container {
+
+	it := bc.getShortIterator()
+	for it.hasNext() {
+		rc.Add(it.next())
+	}
+	return rc
+}
+
+func (rc *runContainer16) iorArray(ac *arrayContainer) container {
+	it := ac.getShortIterator()
+	for it.hasNext() {
+		rc.Add(it.next())
+	}
+	return rc
 }
 
 func (rc *runContainer16) lazyIOR(a container) container {
