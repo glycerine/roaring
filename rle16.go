@@ -1203,7 +1203,7 @@ func (cur interval16) subtractInterval(del interval16) (left []interval16, delco
 func (rc *runContainer16) isubtract(del interval16) {
 	origiv := make([]interval16, len(rc.iv))
 	copy(origiv, rc.iv)
-	p("isubtract starting, with del = %s, and rc = %s", del, rc)
+	//p("isubtract starting, with del = %s, and rc = %s", del, rc)
 	n := int64(len(rc.iv))
 	if n == 0 {
 		return // already done.
@@ -1215,52 +1215,52 @@ func (rc *runContainer16) isubtract(del interval16) {
 			last:  rc.iv[n-1].last,
 		}, del)
 	if isEmpty {
-		p("del=%v -> isEmpty, returning early from isubtract", del)
+		//p("del=%v -> isEmpty, returning early from isubtract", del)
 		return // done
 	}
 	// INVAR there is some intersection between rc and del
 	istart, startAlready, _ := rc.search(int64(del.start), nil)
 	ilast, lastAlready, _ := rc.search(int64(del.last), nil)
 
-	p("del=%v, istart = %v, startAlready = %v", del, istart, startAlready)
-	p("del=%v, ilast = %v, lastAlready = %v", del, ilast, lastAlready)
+	//p("del=%v, istart = %v, startAlready = %v", del, istart, startAlready)
+	//p("del=%v, ilast = %v, lastAlready = %v", del, ilast, lastAlready)
 
 	if istart == -1 {
 		if ilast == n-1 {
-			p("discard it all")
+			//p("discard it all")
 			rc.iv = nil
 			rc.card = 0
 			return
 		}
 	}
 	// some intervals will remain
-	p("orig rc.iv = '%s'", ivalString16(rc.iv))
+	//p("orig rc.iv = '%s'", ivalString16(rc.iv))
 	switch {
 	case startAlready && lastAlready:
-		p("case 1: startAlready && lastAlready; istart=%v, ilast=%v. staring rc.iv='%s'", istart, ilast, ivalString16(rc.iv))
+		//p("case 1: startAlready && lastAlready; istart=%v, ilast=%v. staring rc.iv='%s'", istart, ilast, ivalString16(rc.iv))
 		caboose := rc.iv[ilast+1:]
 		rc.card = -1 // uncache it. lazy: don't compute unless we have to.
 		res0, _ := rc.iv[istart].subtractInterval(del)
-		p("case 1 rc.iv[:start] = '%s', while res0='%s'", ivalString16(rc.iv[:istart]), ivalString16(res0))
+		//p("case 1 rc.iv[:start] = '%s', while res0='%s'", ivalString16(rc.iv[:istart]), ivalString16(res0))
 		// would overwrite values in iv b/c res0 can have len 2. so
 		// write to origiv instead.
 		pre := append(origiv[:istart], res0...)
-		p("case 1 pre = '%s'", ivalString16(pre))
-		p("orig rc.iv = '%s'", ivalString16(rc.iv))
+		//p("case 1 pre = '%s'", ivalString16(pre))
+		//p("orig rc.iv = '%s'", ivalString16(rc.iv))
 
 		if ilast != istart {
 			res1, _ := rc.iv[ilast].subtractInterval(del)
 			pre = append(pre, res1...)
-			p("case 1 ilast != istart, after appending res1 (%s), pre is now '%s'", ivalString16(res1), ivalString16(pre))
-			p("orig rc.iv = '%s'", ivalString16(rc.iv))
+			//p("case 1 ilast != istart, after appending res1 (%s), pre is now '%s'", ivalString16(res1), ivalString16(pre))
+			//p("orig rc.iv = '%s'", ivalString16(rc.iv))
 
 		}
-		p("case 1 before suffixing with: rc.iv[ilast+1:] = '%s'", ivalString16(rc.iv[ilast+1:]))
+		//p("case 1 before suffixing with: rc.iv[ilast+1:] = '%s'", ivalString16(rc.iv[ilast+1:]))
 		rc.iv = append(pre, caboose...)
 		return
 
 	case !startAlready && !lastAlready:
-		p("case 2: !startAlready && !lastAlready")
+		//p("case 2: !startAlready && !lastAlready")
 		// we get to discard whole intervals
 
 		// from the search() definition:
@@ -1307,7 +1307,7 @@ func (rc *runContainer16) isubtract(del interval16) {
 		return
 
 	case startAlready && !lastAlready:
-		p("case 3: startAlready && !lastAlready")
+		//p("case 3: startAlready && !lastAlready")
 		rc.card = -1
 		res0, _ := rc.iv[istart].subtractInterval(del)
 		pre := append(origiv[:istart], res0...)
@@ -1315,7 +1315,7 @@ func (rc *runContainer16) isubtract(del interval16) {
 		return
 
 	case !startAlready && lastAlready:
-		p("case 4: !startAlready && lastAlready")
+		//p("case 4: !startAlready && lastAlready")
 		res1, _ := rc.iv[ilast].subtractInterval(del)
 		pre := append(origiv[:istart+1], res1...)
 		rc.iv = append(pre, rc.iv[ilast+1:]...)
