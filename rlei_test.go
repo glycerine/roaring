@@ -735,7 +735,8 @@ func TestRle16InversionOfIntervals018(t *testing.T) {
 				a := []uint16{}
 
 				// hashNotA will be NOT ma
-				for i := 0; i < n; i++ {
+				//for i := 0; i < n; i++ {
+				for i := 0; i < MaxUint16+1; i++ {
 					hashNotA[i] = true
 				}
 
@@ -744,7 +745,7 @@ func TestRle16InversionOfIntervals018(t *testing.T) {
 					r0 := rand.Intn(n)
 					a = append(a, uint16(r0))
 					ma[r0] = true
-					hashNotA[r0] = false
+					delete(hashNotA, r0)
 				}
 
 				//showArray16(a, "a")
@@ -754,21 +755,23 @@ func TestRle16InversionOfIntervals018(t *testing.T) {
 				rc := newRunContainer16FromVals(false, a...)
 
 				p("rc from a is %v", rc)
-
+				p("rc.cardinality = %v", rc.cardinality())
 				inv := rc.invert()
 
-				p("inv of a is %v", inv)
+				p("inv of a (card=%v) is %v", inv.cardinality(), inv)
+
+				So(inv.cardinality(), ShouldEqual, 1+MaxUint16-rc.cardinality())
 
 				for k := 0; k < n; k++ {
 					if hashNotA[k] {
-						p("hashNotA has %v, checking inv", k)
+						//p("hashNotA has %v, checking inv", k)
 						So(inv.contains(uint16(k)), ShouldBeTrue)
 					}
 				}
 
 				// skip for now, too big to do 2^16-1
-				//p("checking for cardinality agreement: inv is %v, len(hashNotA) is %v", inv.getCardinality(), len(hashNotA))
-				//So(inv.getCardinality(), ShouldEqual, len(hashNotA))
+				p("checking for cardinality agreement: inv is %v, len(hashNotA) is %v", inv.getCardinality(), len(hashNotA))
+				So(inv.getCardinality(), ShouldEqual, len(hashNotA))
 			}
 			p("done with randomized invert() check for trial %#v", tr)
 		}

@@ -32,9 +32,8 @@ const MaxUint32 = 4294967295
 // interval endpoint endx, this is MaxUint32 - 1.
 const UpperLimit32 = MaxUint32 - 1
 
-// MaxUint16 is only used internally for the endx
-// value when UpperLimit16 is stored; users should
-// only ever store up to UpperLimit16.
+// MaxUint16 is the largest 16 bit unsigned int.
+// This is the largest value an interval16 can store.
 const MaxUint16 = 65535
 
 // UpperLimit16 is the largest
