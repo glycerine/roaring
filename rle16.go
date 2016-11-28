@@ -174,6 +174,41 @@ func newRunContainer16FromVals(alreadySorted bool, vals ...uint16) *runContainer
 	return rc
 }
 
+// newRunContainer16FromBitmapContainer makes a new run container from bc.
+func newRunContainer16FromBitmapContainer(bc *bitmapContainer) *runContainer16 {
+
+	rc := &runContainer16{}
+	ah := addHelper16{rc: rc}
+
+	n := bc.getCardinality()
+	it := bc.getShortIterator()
+	var cur, prev, val uint16
+	switch {
+	case n == 0:
+		// nothing more
+	case n == 1:
+		val = uint16(it.next())
+		ah.m = append(ah.m, interval16{start: val, last: val})
+		ah.actuallyAdded++
+	default:
+		prev = uint16(it.next())
+		cur = uint16(it.next())
+		ah.runstart = prev
+		ah.actuallyAdded++
+		for i := 1; i < n; i++ {
+			ah.add(cur, prev, i)
+			if it.hasNext() {
+				prev = cur
+				cur = uint16(it.next())
+			}
+		}
+		ah.storeIval(ah.runstart, ah.runlen)
+	}
+	rc.iv = ah.m
+	rc.card = int64(ah.actuallyAdded)
+	return rc
+}
+
 //
 // newRunContainer16FromArray populates a new
 // runContainer16 from the contents of arr.

@@ -502,6 +502,8 @@ func (bc *bitmapContainer) andNot(a container) container {
 func (bc *bitmapContainer) iandNot(a container) container {
 	switch a.(type) {
 	case *arrayContainer:
+		// FIXME: this is not iandNotArray, so it won't
+		// have the side-effect specified by the inplace 'i' prefix.
 		return bc.andNotArray(a.(*arrayContainer))
 	case *bitmapContainer:
 		return bc.iandNotBitmap(a.(*bitmapContainer))
@@ -539,6 +541,15 @@ func (bc *bitmapContainer) andNotBitmap(value2 *bitmapContainer) container {
 	ac := newArrayContainerSize(newCardinality)
 	fillArrayANDNOT(ac.content, bc.bitmap, value2.bitmap)
 	return ac
+}
+
+func (bc *bitmapContainer) iandNotBitmapSurely(value2 *bitmapContainer) *bitmapContainer {
+	newCardinality := int(popcntMaskSlice(bc.bitmap, value2.bitmap))
+	for k := 0; k < len(bc.bitmap); k++ {
+		bc.bitmap[k] = bc.bitmap[k] &^ value2.bitmap[k]
+	}
+	bc.cardinality = newCardinality
+	return bc
 }
 
 func (bc *bitmapContainer) iandNotBitmap(value2 *bitmapContainer) container {

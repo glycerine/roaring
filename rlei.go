@@ -109,12 +109,6 @@ func (rc *runContainer16) andNot(a container) container {
 	panic("unsupported container type")
 }
 
-func (rc *runContainer16) andNotRunContainer16(x2 *runContainer16) container {
-	rcb := rc.toBitmapContainer()
-	x2b := x2.toBitmapContainer()
-	return rcb.andNotBitmap(x2b)
-}
-
 func (rc *runContainer16) fillLeastSignificant16bits(x []uint32, i int, mask uint32) {
 	/*	for k := 0; k < len(ac.content); k++ {
 			x[k+i] = uint16(ac.content[k]) | mask
@@ -382,15 +376,15 @@ func (rc *runContainer16) xor(a container) container {
 }
 
 func (rc *runContainer16) iandNot(a container) container {
-	/*	switch a.(type) {
-		case *runContainer16:
-			return ac.iandNotArray(a.(*runContainer16))
-		case *bitmapContainer:
-			return ac.iandNotBitmap(a.(*bitmapContainer))
-		}
-		panic("unsupported container type")
-	*/
-	return nil
+	switch c := a.(type) {
+	case *arrayContainer:
+		return rc.iandNotArray(c)
+	case *bitmapContainer:
+		return rc.iandNotBitmap(c)
+	case *runContainer16:
+		return rc.iandNotRunContainer16(c)
+	}
+	panic("unsupported container type")
 }
 
 // flip the values in the range [firstOfRange,lastOfRange)
@@ -424,6 +418,12 @@ func (rc *runContainer16) selectInt(x uint16) int {
 	//	return int(ac.content[x])
 }
 
+func (rc *runContainer16) andNotRunContainer16(x2 *runContainer16) container {
+	rcb := rc.toBitmapContainer()
+	x2b := x2.toBitmapContainer()
+	return rcb.andNotBitmap(x2b)
+}
+
 func (rc *runContainer16) andNotArray(ac *arrayContainer) container {
 	rcb := rc.toBitmapContainer()
 	acb := ac.toBitmapContainer()
@@ -446,4 +446,36 @@ func (rc *runContainer16) toBitmapContainer() *bitmapContainer {
 		bc.bitmap[i] |= (uint64(1) << uint(x%64))
 	}
 	return bc
+}
+
+func (rc *runContainer16) iandNotRunContainer16(x2 *runContainer16) container {
+	rcb := rc.toBitmapContainer()
+	x2b := x2.toBitmapContainer()
+	rcb.iandNotBitmapSurely(x2b)
+	// TODO: check size and optimize the return value
+	// TODO: is inplace modification really required? If not, elide the copy.
+	rc2 := newRunContainer16FromBitmapContainer(rcb)
+	*rc = *rc2
+	return rc
+}
+
+func (rc *runContainer16) iandNotArray(ac *arrayContainer) container {
+	rcb := rc.toBitmapContainer()
+	acb := ac.toBitmapContainer()
+	rcb.iandNotBitmapSurely(acb)
+	// TODO: check size and optimize the return value
+	// TODO: is inplace modification really required? If not, elide the copy.
+	rc2 := newRunContainer16FromBitmapContainer(rcb)
+	*rc = *rc2
+	return rc
+}
+
+func (rc *runContainer16) iandNotBitmap(bc *bitmapContainer) container {
+	rcb := rc.toBitmapContainer()
+	rcb.iandNotBitmapSurely(bc)
+	// TODO: check size and optimize the return value
+	// TODO: is inplace modification really required? If not, elide the copy.
+	rc2 := newRunContainer16FromBitmapContainer(rcb)
+	*rc = *rc2
+	return rc
 }
