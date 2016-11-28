@@ -98,15 +98,15 @@ func (rc *runContainer16) iandArray(ac *arrayContainer) container {
 }
 
 func (rc *runContainer16) andNot(a container) container {
-	/*	switch a.(type) {
-		case *runContainer16:
-			return ac.andNotArray(a.(*runContainer16))
-		case *bitmapContainer:
-			return ac.andNotBitmap(a.(*bitmapContainer))
-		}
-		panic("unsupported container type")
-	*/
-	return nil
+	switch c := a.(type) {
+	case *arrayContainer:
+		return rc.andNotArray(c)
+	case *bitmapContainer:
+		return rc.andNotBitmap(c)
+	case *runContainer16:
+		return rc.andNot(c)
+	}
+	panic("unsupported container type")
 }
 
 func (rc *runContainer16) fillLeastSignificant16bits(x []uint32, i int, mask uint32) {
@@ -416,4 +416,28 @@ func (rc *runContainer16) rank(x uint16) int {
 func (rc *runContainer16) selectInt(x uint16) int {
 	return 0 // TODO
 	//	return int(ac.content[x])
+}
+
+func (rc *runContainer16) andNotArray(ac *arrayContainer) container {
+	rcb := rc.toBitmapContainer()
+	acb := ac.toBitmapContainer()
+	return rcb.andNotBitmap(acb)
+}
+
+func (rc *runContainer16) andNotBitmap(bc *bitmapContainer) container {
+	rcb := rc.toBitmapContainer()
+	return rcb.andNotBitmap(bc)
+}
+
+func (rc *runContainer16) toBitmapContainer() *bitmapContainer {
+	bc := newBitmapContainer()
+	n := rc.getCardinality()
+	bc.cardinality = n
+	it := rc.NewRunIterator16()
+	for it.HasNext() {
+		x := it.Next()
+		i := int(x) / 64
+		bc.bitmap[i] |= (uint64(1) << uint(x%64))
+	}
+	return bc
 }
