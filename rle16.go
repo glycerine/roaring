@@ -1109,3 +1109,55 @@ func (rc *runContainer16) selectInt16(x uint16) int {
 	}
 	return int(val)
 }
+
+// helper for invert
+func (rc *runContainer16) invertLastInterval(origin uint16, lastIdx int) []interval16 {
+	cur := rc.iv[lastIdx]
+	if cur.last == MaxUint16 {
+		if cur.start == origin {
+			return nil // empty container
+		}
+		return []interval16{{start: origin, last: cur.start - 1}}
+	}
+	if cur.start == origin {
+		return []interval16{{start: cur.last + 1, last: MaxUint16}}
+	}
+	// invert splits
+	return []interval16{
+		{start: origin, last: cur.start - 1},
+		{start: cur.last + 1, last: MaxUint16},
+	}
+}
+
+func (rc *runContainer16) invert() *runContainer16 {
+	ni := len(rc.iv)
+	var m []interval16
+	switch ni {
+	case 0:
+		return &runContainer16{iv: []interval16{{0, MaxUint16}}}
+	case 1:
+		return &runContainer16{iv: rc.invertLastInterval(0, 0)}
+	}
+	var curStart int64
+	ult := ni - 1
+	for i, cur := range rc.iv {
+		if i == ult {
+			// invertLastInteval will add both intervals (b) and (c) in
+			// diagram below.
+			m = append(m, rc.invertLastInterval(uint16(curStart), i)...)
+			break
+		}
+		// INVAR: i and cur are not the last interval, there is a next at i+1
+		//
+		// ........[cur.start, cur.last] ...... [next.start, next.last]....
+		//    ^                             ^                           ^
+		//   (a)                           (b)                         (c)
+		//
+		// Now: we add interval (a), noting that if (a) starts at 0 we skip it.
+		if cur.start > 0 {
+			m = append(m, interval16{start: uint16(curStart), last: cur.start - 1})
+		}
+		curStart = int64(cur.last + 1)
+	}
+	return &runContainer16{iv: m}
+}
