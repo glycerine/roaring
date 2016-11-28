@@ -1138,13 +1138,13 @@ func (rc *runContainer32) invert() *runContainer32 {
 	case 1:
 		return &runContainer32{iv: rc.invertLastInterval(0, 0)}
 	}
-	var curStart int64
+	var invStart int64
 	ult := ni - 1
 	for i, cur := range rc.iv {
 		if i == ult {
 			// invertLastInteval will add both intervals (b) and (c) in
 			// diagram below.
-			m = append(m, rc.invertLastInterval(uint32(curStart), i)...)
+			m = append(m, rc.invertLastInterval(uint32(invStart), i)...)
 			break
 		}
 		// INVAR: i and cur are not the last interval, there is a next at i+1
@@ -1153,11 +1153,11 @@ func (rc *runContainer32) invert() *runContainer32 {
 		//    ^                             ^                           ^
 		//   (a)                           (b)                         (c)
 		//
-		// Now: we add interval (a), noting that if (a) starts at 0 we skip it.
+		// Now: we add interval (a); but if (a) is empty, for cur.start==0, we skip it.
 		if cur.start > 0 {
-			m = append(m, interval32{start: uint32(curStart), last: cur.start - 1})
+			m = append(m, interval32{start: uint32(invStart), last: cur.start - 1})
 		}
-		curStart = int64(cur.last + 1)
+		invStart = int64(cur.last + 1)
 	}
 	return &runContainer32{iv: m}
 }
