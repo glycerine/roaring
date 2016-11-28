@@ -791,8 +791,10 @@ func TestRle16SubtractionOfIntervals019(t *testing.T) {
 		rand.Seed(seed)
 
 		trials := []trial{
-			trial{n: 10, percentFill: .90, ntrial: 1},
+			trial{n: 1000, percentFill: .90, ntrial: 10},
 		}
+
+		//		rleVerbose = true
 
 		tester := func(tr trial) {
 			for j := 0; j < tr.ntrial; j++ {
@@ -823,7 +825,6 @@ func TestRle16SubtractionOfIntervals019(t *testing.T) {
 					delete(hashAminusB, k)
 				}
 
-				rleVerbose = true
 				showHash("hash a is:", ma)
 				showHash("hash b is:", mb)
 				showHash("hashAminusB is:", hashAminusB)

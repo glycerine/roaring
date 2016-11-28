@@ -72,18 +72,23 @@ func (iv interval16) String() string {
 	return fmt.Sprintf("[%d, %d]", iv.start, iv.last)
 }
 
+func ivalString16(iv []interval16) string {
+	var s string
+	var j int
+	var p interval16
+	for j, p = range iv {
+		s += fmt.Sprintf("%v:[%d, %d], ", j, p.start, p.last)
+	}
+	return s
+}
+
 // String produces a human viewable string of the contents.
 func (rc *runContainer16) String() string {
 	if len(rc.iv) == 0 {
 		return "runContainer16{}"
 	}
-	var s string
-	var j int
-	var p interval16
-	for j, p = range rc.iv {
-		s += fmt.Sprintf("%v:[%d, %d], ", j, p.start, p.last)
-	}
-	return `runContainer16{` + s + `}`
+	is := ivalString16(rc.iv)
+	return `runContainer16{` + is + `}`
 }
 
 // uint16Slice is a sort.Sort convenience method
@@ -1170,7 +1175,9 @@ func (rc *runContainer16) invert() *runContainer16 {
 }
 
 func (cur interval16) subtractInterval(del interval16) (left []interval16, delcount int64) {
-
+	defer func() {
+		p("returning from subtractInterval of cur - del with cur=%s and del=%s, returning left=%s", cur, del, ivalString16(left))
+	}()
 	isect, isEmpty := intersectInterval16s(cur, del)
 
 	if isEmpty {
@@ -1194,7 +1201,9 @@ func (cur interval16) subtractInterval(del interval16) (left []interval16, delco
 }
 
 func (rc *runContainer16) isubtract(del interval16) {
-
+	origiv := make([]interval16, len(rc.iv))
+	copy(origiv, rc.iv)
+	p("isubtract starting, with del = %s, and rc = %s", del, rc)
 	n := int64(len(rc.iv))
 	if n == 0 {
 		return // already done.
@@ -1206,33 +1215,52 @@ func (rc *runContainer16) isubtract(del interval16) {
 			last:  rc.iv[n-1].last,
 		}, del)
 	if isEmpty {
+		p("del=%v -> isEmpty, returning early from isubtract", del)
 		return // done
 	}
 	// INVAR there is some intersection between rc and del
 	istart, startAlready, _ := rc.search(int64(del.start), nil)
 	ilast, lastAlready, _ := rc.search(int64(del.last), nil)
 
+	p("del=%v, istart = %v, startAlready = %v", del, istart, startAlready)
+	p("del=%v, ilast = %v, lastAlready = %v", del, ilast, lastAlready)
+
 	if istart == -1 {
 		if ilast == n-1 {
-			// discard it all
+			p("discard it all")
 			rc.iv = nil
 			rc.card = 0
 			return
 		}
 	}
 	// some intervals will remain
-
+	p("orig rc.iv = '%s'", ivalString16(rc.iv))
 	switch {
 	case startAlready && lastAlready:
+		p("case 1: startAlready && lastAlready; istart=%v, ilast=%v. staring rc.iv='%s'", istart, ilast, ivalString16(rc.iv))
+		caboose := rc.iv[ilast+1:]
 		rc.card = -1 // uncache it. lazy: don't compute unless we have to.
 		res0, _ := rc.iv[istart].subtractInterval(del)
-		res1, _ := rc.iv[ilast].subtractInterval(del)
-		pre := append(rc.iv[:istart], res0...)
-		pre2 := append(pre, res1...)
-		rc.iv = append(pre2, rc.iv[ilast+1:]...)
+		p("case 1 rc.iv[:start] = '%s', while res0='%s'", ivalString16(rc.iv[:istart]), ivalString16(res0))
+		// would overwrite values in iv b/c res0 can have len 2. so
+		// write to origiv instead.
+		pre := append(origiv[:istart], res0...)
+		p("case 1 pre = '%s'", ivalString16(pre))
+		p("orig rc.iv = '%s'", ivalString16(rc.iv))
+
+		if ilast != istart {
+			res1, _ := rc.iv[ilast].subtractInterval(del)
+			pre = append(pre, res1...)
+			p("case 1 ilast != istart, after appending res1 (%s), pre is now '%s'", ivalString16(res1), ivalString16(pre))
+			p("orig rc.iv = '%s'", ivalString16(rc.iv))
+
+		}
+		p("case 1 before suffixing with: rc.iv[ilast+1:] = '%s'", ivalString16(rc.iv[ilast+1:]))
+		rc.iv = append(pre, caboose...)
 		return
 
 	case !startAlready && !lastAlready:
+		p("case 2: !startAlready && !lastAlready")
 		// we get to discard whole intervals
 
 		// from the search() definition:
@@ -1279,15 +1307,17 @@ func (rc *runContainer16) isubtract(del interval16) {
 		return
 
 	case startAlready && !lastAlready:
+		p("case 3: startAlready && !lastAlready")
 		rc.card = -1
 		res0, _ := rc.iv[istart].subtractInterval(del)
-		pre := append(rc.iv[:istart], res0...)
+		pre := append(origiv[:istart], res0...)
 		rc.iv = append(pre, rc.iv[ilast+1:]...)
 		return
 
 	case !startAlready && lastAlready:
+		p("case 4: !startAlready && lastAlready")
 		res1, _ := rc.iv[ilast].subtractInterval(del)
-		pre := append(rc.iv[:istart+1], res1...)
+		pre := append(origiv[:istart+1], res1...)
 		rc.iv = append(pre, rc.iv[ilast+1:]...)
 		rc.card = -1
 		return

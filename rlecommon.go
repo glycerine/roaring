@@ -10,7 +10,7 @@ import (
 // rleVerbose controls whether p() prints show up.
 // The testing package sets this based on
 // testing.Verbose().
-var rleVerbose bool
+var rleVerbose bool = true
 
 // p is a shorthand for fmt.Printf with beginning and
 // trailing newlines. p() makes it easy
