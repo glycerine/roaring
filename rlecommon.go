@@ -118,6 +118,7 @@ type trial struct {
 	ntrial      int
 
 	// only in the union test
+	// only subtract test
 	percentDelete float64
 }
 

@@ -782,3 +782,81 @@ func TestRle16InversionOfIntervals018(t *testing.T) {
 
 	})
 }
+
+func TestRle16SubtractionOfIntervals019(t *testing.T) {
+
+	Convey("runContainer `subtract` operation removes an interval in-place", t, func() {
+		seed := int64(42)
+		p("seed is %v", seed)
+		rand.Seed(seed)
+
+		trials := []trial{
+			trial{n: 10, percentFill: .90, ntrial: 1},
+		}
+
+		tester := func(tr trial) {
+			for j := 0; j < tr.ntrial; j++ {
+				p("TestRle16SubtractionOfIntervals019 on check# j=%v", j)
+				ma := make(map[int]bool)
+				mb := make(map[int]bool)
+
+				n := tr.n
+				a := []uint16{}
+				b := []uint16{}
+
+				// hashAminusB will be  ma - mb
+				hashAminusB := make(map[int]bool)
+
+				draw := int(float64(n) * tr.percentFill)
+				for i := 0; i < draw; i++ {
+					r0 := rand.Intn(n)
+					a = append(a, uint16(r0))
+					ma[r0] = true
+					hashAminusB[r0] = true
+
+					r1 := rand.Intn(n)
+					b = append(b, uint16(r1))
+					mb[r1] = true
+				}
+
+				for k := range mb {
+					delete(hashAminusB, k)
+				}
+
+				rleVerbose = true
+				showHash("hash a is:", ma)
+				showHash("hash b is:", mb)
+				showHash("hashAminusB is:", hashAminusB)
+
+				// RunContainer's subtract A - B
+				rc := newRunContainer16FromVals(false, a...)
+				rcb := newRunContainer16FromVals(false, b...)
+
+				p("rc from a is %v", rc)
+				p("rc.cardinality = %v", rc.cardinality())
+				p("rcb from b is %v", rcb)
+				p("rcb.cardinality = %v", rcb.cardinality())
+				it := rcb.NewRunIterator16()
+				for it.HasNext() {
+					nx := it.Next()
+					rc.isubtract(interval16{start: nx, last: nx})
+				}
+
+				p("rc = a - b; has (card=%v), is %v", rc.cardinality(), rc)
+
+				for k := range hashAminusB {
+					p("hashAminusB has element %v, checking rc (which is A - B)", k)
+					So(rc.contains(uint16(k)), ShouldBeTrue)
+				}
+				p("checking for cardinality agreement: sub is %v, len(hashAminusB) is %v", rc.getCardinality(), len(hashAminusB))
+				So(rc.getCardinality(), ShouldEqual, len(hashAminusB))
+			}
+			p("done with randomized subtract() check for trial %#v", tr)
+		}
+
+		for i := range trials {
+			tester(trials[i])
+		}
+
+	})
+}

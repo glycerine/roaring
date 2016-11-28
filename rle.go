@@ -1193,7 +1193,7 @@ func (cur interval32) subtractInterval(del interval32) (left []interval32, delco
 	}
 }
 
-func (rc *runContainer32) subtract(del interval32) {
+func (rc *runContainer32) isubtract(del interval32) {
 
 	n := int64(len(rc.iv))
 	if n == 0 {
