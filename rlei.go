@@ -110,11 +110,16 @@ func (rc *runContainer16) andNot(a container) container {
 }
 
 func (rc *runContainer16) fillLeastSignificant16bits(x []uint32, i int, mask uint32) {
-	// TODO part of container interface, must implement.
-	/*	for k := 0; k < len(ac.content); k++ {
-			x[k+i] = uint16(ac.content[k]) | mask
+	k := 0
+	var val int64
+	for _, p := range rc.iv {
+		n := p.runlen()
+		for j := int64(0); j < n; j++ {
+			val = int64(p.start) + j
+			x[k+i] = uint32(val) | mask
+			k++
 		}
-	*/
+	}
 }
 
 func (rc *runContainer16) getShortIterator() shortIterable {
