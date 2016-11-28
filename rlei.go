@@ -110,6 +110,7 @@ func (rc *runContainer16) andNot(a container) container {
 }
 
 func (rc *runContainer16) fillLeastSignificant16bits(x []uint32, i int, mask uint32) {
+	// TODO part of container interface, must implement.
 	/*	for k := 0; k < len(ac.content); k++ {
 			x[k+i] = uint16(ac.content[k]) | mask
 		}
@@ -117,12 +118,13 @@ func (rc *runContainer16) fillLeastSignificant16bits(x []uint32, i int, mask uin
 }
 
 func (rc *runContainer16) getShortIterator() shortIterable {
-	// TODO
+	// TODO part of container interface, must implement.
 	return &shortIterator{}
 	//	return &shortIterator{ac.content, 0}
 }
 
 func (rc *runContainer16) getSizeInBytes() int {
+	// TODO part of container interface, must implement.
 	/*
 		// unsafe.Sizeof calculates the memory used by the top level of the slice
 		// descriptor - not including the size of the memory referenced by the slice.
@@ -138,6 +140,7 @@ func (rc *runContainer16) getSizeInBytes() int {
 
 // add the values in the range [firstOfRange,lastofRange)
 func (rc *runContainer16) iaddRange(firstOfRange, lastOfRange int) container {
+	// TODO part of container interface, must implement.
 	/*	if firstOfRange >= lastOfRange {
 			return ac
 		}
@@ -178,6 +181,7 @@ func (rc *runContainer16) iaddRange(firstOfRange, lastOfRange int) container {
 
 // remove the values in the range [firstOfRange,lastOfRange)
 func (rc *runContainer16) iremoveRange(firstOfRange, lastOfRange int) container {
+	// TODO part of container interface, must implement.
 	/*	if firstOfRange >= lastOfRange {
 			return ac
 		}
@@ -203,6 +207,7 @@ func (rc *runContainer16) iremoveRange(firstOfRange, lastOfRange int) container 
 
 // flip the values in the range [firstOfRange,lastOfRange)
 func (rc *runContainer16) not(firstOfRange, lastOfRange int) container {
+	// TODO part of container interface, must implement.
 	/*	if firstOfRange >= lastOfRange {
 			return ac.clone()
 		}
@@ -212,6 +217,7 @@ func (rc *runContainer16) not(firstOfRange, lastOfRange int) container {
 }
 
 func (rc *runContainer16) equals(o interface{}) bool {
+	// TODO part of container interface, must implement.
 	/*
 		srb, ok := o.(*runContainer16)
 		if ok {
@@ -327,6 +333,7 @@ func (rc *runContainer16) iorArray(ac *arrayContainer) container {
 }
 
 func (rc *runContainer16) lazyIOR(a container) container {
+	// TODO part of container interface, must implement.
 	/*	switch a.(type) {
 		case *runContainer16:
 			return ac.lazyorArray(a.(*runContainer16))
@@ -339,6 +346,7 @@ func (rc *runContainer16) lazyIOR(a container) container {
 }
 
 func (rc *runContainer16) lazyOR(a container) container {
+	// TODO part of container interface, must implement.
 	/*	switch a.(type) {
 		case *runContainer16:
 			return ac.lazyorArray(a.(*runContainer16))
@@ -351,6 +359,7 @@ func (rc *runContainer16) lazyOR(a container) container {
 }
 
 func (rc *runContainer16) intersects(a container) bool {
+	// TODO part of container interface, must implement.
 	/*
 		switch a.(type) {
 		case *runContainer16:
@@ -364,6 +373,7 @@ func (rc *runContainer16) intersects(a container) bool {
 }
 
 func (rc *runContainer16) xor(a container) container {
+	// TODO part of container interface, must implement.
 	/*	switch a.(type) {
 		case *runContainer16:
 			return ac.xorArray(a.(*runContainer16))
@@ -389,6 +399,7 @@ func (rc *runContainer16) iandNot(a container) container {
 
 // flip the values in the range [firstOfRange,lastOfRange)
 func (rc *runContainer16) inot(firstOfRange, lastOfRange int) container {
+	// TODO part of container interface, must implement.
 	/*	if firstOfRange >= lastOfRange {
 			return ac
 		}
@@ -402,6 +413,7 @@ func (rc *runContainer16) getCardinality() int {
 }
 
 func (rc *runContainer16) rank(x uint16) int {
+	// TODO part of container interface, must implement.
 	/*
 		answer := binarySearch(ac.content, x)
 		if answer >= 0 {
@@ -414,8 +426,7 @@ func (rc *runContainer16) rank(x uint16) int {
 }
 
 func (rc *runContainer16) selectInt(x uint16) int {
-	return 0 // TODO
-	//	return int(ac.content[x])
+	return rc.selectInt16(x)
 }
 
 func (rc *runContainer16) andNotRunContainer16(x2 *runContainer16) container {

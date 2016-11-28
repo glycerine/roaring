@@ -1096,3 +1096,16 @@ func sliceToString16(m []interval16) string {
 	}
 	return s
 }
+
+func (rc *runContainer16) selectInt16(x uint16) int {
+	n := rc.cardinality()
+	if int64(x) > n {
+		return -1
+	}
+	it := rc.NewRunIterator16()
+	var val uint16
+	for i := uint16(0); i <= x; i++ {
+		val = uint16(it.Next())
+	}
+	return int(val)
+}

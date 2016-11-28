@@ -1096,3 +1096,16 @@ func sliceToString32(m []interval32) string {
 	}
 	return s
 }
+
+func (rc *runContainer32) selectInt32(x uint32) int {
+	n := rc.cardinality()
+	if int64(x) > n {
+		return -1
+	}
+	it := rc.NewRunIterator32()
+	var val uint32
+	for i := uint32(0); i <= x; i++ {
+		val = uint32(it.Next())
+	}
+	return int(val)
+}

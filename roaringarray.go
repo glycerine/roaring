@@ -38,7 +38,7 @@ type container interface {
 	getSizeInBytes() int
 	//removeRange(start, final int) container  // range is [firstOfRange,lastOfRange) (unused)
 	iremoveRange(start, final int) container // i stands for inplace, range is [firstOfRange,lastOfRange)
-	selectInt(uint16) int
+	selectInt(x uint16) int                  // selectInt returns the xth integer in the container
 	serializedSizeInBytes() int
 	readFrom(io.Reader) (int, error)
 	writeTo(io.Writer) (int, error)
