@@ -216,29 +216,27 @@ func (rc *runContainer16) not(firstOfRange, lastOfRange int) container {
 	return nil
 }
 
+// equals is not logical equals,  apparently from the array implementation,
+// equals also requires the same type of container.
 func (rc *runContainer16) equals(o interface{}) bool {
-	// TODO part of container interface, must implement.
-	/*
-		srb, ok := o.(*runContainer16)
-		if ok {
-			// Check if the containers are the same object.
-			if ac == srb {
-				return true
-			}
-
-			if len(srb.content) != len(ac.content) {
-				return false
-			}
-
-			for i, v := range ac.content {
-				if v != srb.content[i] {
-					return false
-				}
-			}
+	srb, ok := o.(*runContainer16)
+	if ok {
+		// Check if the containers are the same object.
+		if rc == srb {
 			return true
 		}
-		return false
-	*/
+
+		if len(srb.iv) != len(rc.iv) {
+			return false
+		}
+
+		for i, v := range rc.iv {
+			if v != srb.iv[i] {
+				return false
+			}
+		}
+		return true
+	}
 	return false
 }
 

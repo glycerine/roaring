@@ -28,6 +28,9 @@ type container interface {
 	xor(r container) container
 	getShortIterator() shortIterable
 	contains(i uint16) bool
+
+	// equals is not logical equals,  apparently from the array implementation,
+	// equals also requires the same type of container.
 	equals(i interface{}) bool
 	fillLeastSignificant16bits(array []uint32, i int, mask uint32)
 	or(r container) container
