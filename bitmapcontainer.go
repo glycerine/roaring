@@ -116,6 +116,9 @@ func (bc *bitmapContainer) remove(i uint16) container {
 	if out.contains(i) {
 		out.cardinality--
 		out.bitmap[i/64] &^= (uint64(1) << (i % 64))
+		if out.cardinality == arrayDefaultMaxSize {
+			return out.toArrayContainer()
+		}
 	}
 	return out
 }
