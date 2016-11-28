@@ -1,4 +1,4 @@
-.PHONY: help all test format fmtcheck vet lint     qa deps clean nuke
+.PHONY: help all test format fmtcheck vet lint     qa deps clean nuke rle
 
 
 
@@ -80,3 +80,7 @@ clean:
 nuke:
 	rm -rf ./target
 	GOPATH=$(GOPATH) go clean -i ./...
+
+rle:
+	cp rle.go rle16.go
+	perl -pi -e 's/32/16/g' rle16.go
