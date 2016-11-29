@@ -319,16 +319,15 @@ func (rc *runContainer16) intersects(a container) bool {
 }
 
 func (rc *runContainer16) xor(a container) container {
-	// TODO part of container interface, must implement.
-	/*	switch a.(type) {
-		case *runContainer16:
-			return ac.xorArray(a.(*runContainer16))
-		case *bitmapContainer:
-			return a.xor(ac)
-		}
-		panic("unsupported container type")
-	*/
-	return nil
+	switch c := a.(type) {
+	case *arrayContainer:
+		return rc.xorArray(c)
+	case *bitmapContainer:
+		return rc.xorBitmap(c)
+	case *runContainer16:
+		return rc.xorRunContainer16(c)
+	}
+	panic("unsupported container type")
 }
 
 func (rc *runContainer16) iandNot(a container) container {
@@ -383,10 +382,8 @@ func (rc *runContainer16) selectInt(x uint16) int {
 	return rc.selectInt16(x)
 }
 
-func (rc *runContainer16) andNotRunContainer16(x2 *runContainer16) container {
-	rcb := rc.toBitmapContainer()
-	x2b := x2.toBitmapContainer()
-	return rcb.andNotBitmap(x2b)
+func (rc *runContainer16) andNotRunContainer16(b *runContainer16) container {
+	return rc.AndNotRunContainer16(b)
 }
 
 func (rc *runContainer16) andNotArray(ac *arrayContainer) container {
@@ -443,4 +440,21 @@ func (rc *runContainer16) iandNotBitmap(bc *bitmapContainer) container {
 	rc2 := newRunContainer16FromBitmapContainer(rcb)
 	*rc = *rc2
 	return rc
+}
+
+func (rc *runContainer16) xorRunContainer16(x2 *runContainer16) container {
+	rcb := rc.toBitmapContainer()
+	x2b := x2.toBitmapContainer()
+	return rcb.xorBitmap(x2b)
+}
+
+func (rc *runContainer16) xorArray(ac *arrayContainer) container {
+	rcb := rc.toBitmapContainer()
+	acb := ac.toBitmapContainer()
+	return rcb.xorBitmap(acb)
+}
+
+func (rc *runContainer16) xorBitmap(bc *bitmapContainer) container {
+	rcb := rc.toBitmapContainer()
+	return rcb.xorBitmap(bc)
 }

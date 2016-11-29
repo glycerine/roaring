@@ -1385,3 +1385,75 @@ func (rc *runContainer32) isubtract(del interval32) {
 		return
 	}
 }
+
+// port of run_container_andnot from CRoaring...
+// https://github.com/RoaringBitmap/CRoaring/blob/master/src/containers/run.c#L435-L496
+func (rc *runContainer32) AndNotRunContainer32(b *runContainer32) *runContainer32 {
+
+	if len(b.iv) == 0 || len(rc.iv) == 0 {
+		return rc
+	}
+
+	dst := newRunContainer32()
+	apos := 0
+	bpos := 0
+
+	a := rc
+
+	astart := a.iv[apos].start
+	alast := a.iv[apos].last
+	bstart := b.iv[bpos].start
+	blast := b.iv[bpos].last
+
+	alen := len(a.iv)
+	blen := len(b.iv)
+
+	for apos < alen && bpos < blen {
+		//p("top: apos = %v, alen=%v, bpos=%v, blen=%v", apos, alen, bpos, blen)
+		switch {
+		case alast < bstart:
+			// output the first run
+			dst.iv = append(dst.iv, interval32{start: uint32(astart), last: uint32(alast)})
+			//p("alast(%v) < bstart(%v), dst after adding [astart, last] is: %s", alast, bstart, dst)
+			apos++
+			if apos < alen {
+				astart = a.iv[apos].start
+				alast = a.iv[apos].last
+			}
+		case blast < astart:
+			// exit the second run
+			bpos++
+			if bpos < blen {
+				bstart = b.iv[bpos].start
+				blast = b.iv[bpos].last
+			}
+		default:
+			//   a: [             ]
+			//   b:            [    ]
+			// alast >= bstart
+			// blast >= astart
+			if astart < bstart {
+				dst.iv = append(dst.iv, interval32{start: uint32(astart), last: uint32(bstart - 1)})
+				//p("astart(%v) < bstart(%v), dst after adding [astart, bstart] is: %s", astart, bstart, dst)
+			}
+			if alast > blast {
+				astart = blast + 1
+			} else {
+				apos++
+				if apos < alen {
+					astart = a.iv[apos].start
+					alast = a.iv[apos].last
+				}
+			}
+		}
+	}
+	if apos < alen {
+		dst.iv = append(dst.iv, interval32{start: uint32(astart), last: uint32(alast)})
+		apos++
+		if apos < alen {
+			dst.iv = append(dst.iv, a.iv[apos:]...)
+		}
+	}
+
+	return dst
+}

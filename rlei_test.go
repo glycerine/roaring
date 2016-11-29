@@ -506,9 +506,10 @@ func showArray16(a []uint16, name string) {
 	p("%s is '%v'", name, stringA)
 }
 
-func TestRle16RandomAndNot16(t *testing.T) {
+func TestRle16RandomAndNot016(t *testing.T) {
 
 	Convey("runContainer16 `andNot` operation against other container types should correctly do the and-not operation", t, func() {
+		//rleVerbose = true
 		seed := int64(42)
 		p("seed is %v", seed)
 		rand.Seed(seed)
