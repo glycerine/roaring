@@ -286,30 +286,80 @@ func (rc *runContainer16) iorArray(ac *arrayContainer) container {
 	return rc
 }
 
+// lazyIOR is described (not yet implemented) in
+// this nice note from @lemire on
+// https://github.com/RoaringBitmap/roaring/pull/70#issuecomment-263613737
+//
+// Description of lazyOR and lazyIOR from @lemire:
+//
+// Lazy functions are optional and can be simply
+// wrapper around non-lazy functions.
+//
+// The idea of "laziness" is as follows. It is
+// inspired by the concept of lazy evaluation
+// you might be familiar with (functional programming
+// and all that). So a roaring bitmap is
+// such that all its containers are, in some
+// sense, chosen to use as little memory as
+// possible. This is nice. Also, all bitsets
+// are "cardinality aware" so that you can do
+// fast rank/select queries, or query the
+// cardinality of the whole bitmap... very fast,
+// without latency.
+//
+// However, imagine that you are aggregating 100
+// bitmaps together. So you OR the first two, then OR
+// that with the third one and so forth. Clearly,
+// intermediate bitmaps don't need to be as
+// compressed as possible, right? They can be
+// in a "dirty state". You only need the end
+// result to be in a nice state... which you
+// can achieve by calling repairAfterLazy at the end.
+//
+// The Java/C code does something special for
+// the in-place lazy OR runs. The idea is that
+// instead of taking two run containers and
+// generating a new one, we actually try to
+// do the computation in-place through a
+// technique invented by @gssiyankai (pinging him!).
+// What you do is you check whether the host
+// run container has lots of extra capacity.
+// If it does, you move its data at the end of
+// the backing array, and then you write
+// the answer at the beginning. What this
+// trick does is minimize memory allocations.
+//
 func (rc *runContainer16) lazyIOR(a container) container {
-	// TODO part of container interface, must implement.
-	/*	switch a.(type) {
-		case *runContainer16:
-			return ac.lazyorArray(a.(*runContainer16))
+	panic("TODO: runContainer16.lazyIOR not yet implemented")
+
+	/*
+		switch c := a.(type) {
+		case *arrayContainer:
+			return rc.lazyIorArray(c)
 		case *bitmapContainer:
-			return a.lazyOR(ac)
+			return rc.lazyIorBitmap(c)
+		case *runContainer16:
+			return rc.lazyIorRunContainer16(c)
 		}
 		panic("unsupported container type")
 	*/
-	return nil
 }
 
+// lazyOR is described above in lazyIOR.
 func (rc *runContainer16) lazyOR(a container) container {
-	// TODO part of container interface, must implement.
-	/*	switch a.(type) {
-		case *runContainer16:
-			return ac.lazyorArray(a.(*runContainer16))
+	panic("TODO: runContainer16.lazyOR not yet implemented")
+
+	/*
+		switch c := a.(type) {
+		case *arrayContainer:
+			return rc.lazyOrArray(c)
 		case *bitmapContainer:
-			return a.lazyOR(ac)
+			return rc.lazyOrBitmap(c)
+		case *runContainer16:
+			return rc.lazyOrRunContainer16(c)
 		}
 		panic("unsupported container type")
 	*/
-	return nil
 }
 
 func (rc *runContainer16) intersects(a container) bool {
