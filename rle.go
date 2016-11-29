@@ -5,7 +5,7 @@ package roaring
 // Licensed under the Apache License, Version 2.0.
 //
 // We derive a few lines of code from the sort.Search
-// funcion in the golang standard library. That function
+// function in the golang standard library. That function
 // is Copyright 2009 The Go Authors, and licensed
 // under the following BSD-style license.
 /*
@@ -635,8 +635,8 @@ func (rc *runContainer32) numIntervals() int {
 //
 //  c) whichInterval32 is set to the minimum index of rc.iv
 //     which comes strictly before the key;
-//     so  key >= rc.iv[whichInterval32].endx,
-//     and  if whichInterval32+1 exists, then key < rc.iv[whichInterval32+1].startx
+//     so  rc.iv[whichInterval32].last < key,
+//     and  if whichInterval32+1 exists, then key < rc.iv[whichInterval32+1].start
 //     (Note that whichInterval32+1 won't exist when
 //     whichInterval32 is the last interval.)
 //
@@ -1174,28 +1174,43 @@ func (rc *runContainer32) invert() *runContainer32 {
 	return &runContainer32{iv: m}
 }
 
+func (a interval32) equal(b interval32) bool {
+	if a.start == b.start {
+		return a.last == b.last
+	}
+	return false
+}
+
+func (a interval32) isSuperSetOf(b interval32) bool {
+	return a.start <= b.start && b.last <= a.last
+}
+
 func (cur interval32) subtractInterval(del interval32) (left []interval32, delcount int64) {
 	defer func() {
-		p("returning from subtractInterval of cur - del with cur=%s and del=%s, returning left=%s", cur, del, ivalString32(left))
+		//p("returning from subtractInterval of cur - del with cur=%s and del=%s, returning left=%s, delcount=%v", cur, del, ivalString32(left), delcount)
 	}()
 	isect, isEmpty := intersectInterval32s(cur, del)
 
 	if isEmpty {
+		//p("isEmpty")
 		return nil, 0
+	}
+	if del.isSuperSetOf(cur) {
+		return nil, cur.runlen()
 	}
 
 	switch {
 	case isect.start > cur.start && isect.last < cur.last:
-		// split into two
+		//p("split into two")
 		new0 := interval32{start: cur.start, last: isect.start - 1}
 		new1 := interval32{start: isect.last + 1, last: cur.last}
 		return []interval32{new0, new1}, isect.runlen()
 	case isect.start == cur.start:
-		// removal of only the first half or so of cur interval
+		//p("removal of only the first half or so of cur interval. isect: %s, cur: %s, del: %s", isect, cur, del)
 		return []interval32{{start: isect.last + 1, last: cur.last}}, isect.runlen()
 	default:
-		// isect.end == cur.end
-		// removal of only the last half or so of cur interval
+		//p("isect.end == cur.end")
+		//p("removal of only the last half or so of cur interval")
 		return []interval32{{start: cur.start, last: isect.start - 1}}, isect.runlen()
 	}
 }
@@ -1221,6 +1236,7 @@ func (rc *runContainer32) isubtract(del interval32) {
 	// INVAR there is some intersection between rc and del
 	istart, startAlready, _ := rc.search(int64(del.start), nil)
 	ilast, lastAlready, _ := rc.search(int64(del.last), nil)
+	rc.card = -1
 
 	//p("del=%v, istart = %v, startAlready = %v", del, istart, startAlready)
 	//p("del=%v, ilast = %v, lastAlready = %v", del, ilast, lastAlready)
@@ -1229,7 +1245,6 @@ func (rc *runContainer32) isubtract(del interval32) {
 		if ilast == n-1 {
 			//p("discard it all")
 			rc.iv = nil
-			rc.card = 0
 			return
 		}
 	}
@@ -1238,26 +1253,52 @@ func (rc *runContainer32) isubtract(del interval32) {
 	switch {
 	case startAlready && lastAlready:
 		//p("case 1: startAlready && lastAlready; istart=%v, ilast=%v. staring rc.iv='%s'", istart, ilast, ivalString32(rc.iv))
-		caboose := rc.iv[ilast+1:]
-		rc.card = -1 // uncache it. lazy: don't compute unless we have to.
 		res0, _ := rc.iv[istart].subtractInterval(del)
+
 		//p("case 1 rc.iv[:start] = '%s', while res0='%s'", ivalString32(rc.iv[:istart]), ivalString32(res0))
 		// would overwrite values in iv b/c res0 can have len 2. so
 		// write to origiv instead.
-		pre := append(origiv[:istart], res0...)
+
 		//p("case 1 pre = '%s'", ivalString32(pre))
 		//p("orig rc.iv = '%s'", ivalString32(rc.iv))
 
+		lost := 1 + ilast - istart
+		changeSize := int64(len(res0)) - lost
+		newSize := int64(len(rc.iv)) + changeSize
+
+		//p("case 1 before suffixing with: rc.iv[ilast+1:] = '%s'", ivalString32(rc.iv[ilast+1:]))
+		//	rc.iv = append(pre, caboose...)
+		//	return
+
 		if ilast != istart {
 			res1, _ := rc.iv[ilast].subtractInterval(del)
-			pre = append(pre, res1...)
-			//p("case 1 ilast != istart, after appending res1 (%s), pre is now '%s'", ivalString32(res1), ivalString32(pre))
-			//p("orig rc.iv = '%s'", ivalString32(rc.iv))
-
+			res0 = append(res0, res1...)
+			changeSize = int64(len(res0)) - lost
+			newSize = int64(len(rc.iv)) + changeSize
 		}
-		//p("case 1 before suffixing with: rc.iv[ilast+1:] = '%s'", ivalString32(rc.iv[ilast+1:]))
-		rc.iv = append(pre, caboose...)
-		return
+		switch {
+		case changeSize < 0:
+			// shrink
+			copy(rc.iv[istart+int64(len(res0)):], rc.iv[ilast+1:])
+			copy(rc.iv[istart:istart+int64(len(res0))], res0)
+			rc.iv = rc.iv[:newSize]
+			return
+		case changeSize == 0:
+			// stay the same
+			copy(rc.iv[istart:istart+int64(len(res0))], res0)
+			return
+		default:
+			// changeSize > 0 is only possible when ilast == istart.
+			// Hence we now know: changeSize == 1 and len(gained) == 2
+			rc.iv = append(rc.iv, interval32{})
+			// len(rc.iv) is correct now, no need to rc.iv = rc.iv[:newSize]
+
+			// copy the tail into place
+			copy(rc.iv[ilast+2:], rc.iv[ilast+1:])
+			// copy the new item(s) into place
+			copy(rc.iv[istart:istart+2], res0)
+			return
+		}
 
 	case !startAlready && !lastAlready:
 		//p("case 2: !startAlready && !lastAlready")
@@ -1297,29 +1338,50 @@ func (rc *runContainer32) isubtract(del interval32) {
 		pre := rc.iv[:istart+1]
 		if ilast == n-1 {
 			rc.iv = pre
-			rc.card = -1
 			return
 		}
 		// INVAR: ilast < n-1
-		post := rc.iv[ilast+1:]
-		rc.iv = append(pre, post...)
-		rc.card = -1
+		lost := ilast - istart
+		changeSize := -lost
+		newSize := int64(len(rc.iv)) + changeSize
+		if changeSize != 0 {
+			copy(rc.iv[ilast+1+changeSize:], rc.iv[ilast+1:])
+		}
+		rc.iv = rc.iv[:newSize]
 		return
 
 	case startAlready && !lastAlready:
-		//p("case 3: startAlready && !lastAlready")
-		rc.card = -1
+		// we can only shrink or stay the same size
+		// i.e. we either eliminate the whole interval,
+		// or just cut off the right side.
+		//p("case 3: startAlready && !lastAlready, rc='%s', del='%s'", rc, del)
 		res0, _ := rc.iv[istart].subtractInterval(del)
-		pre := append(origiv[:istart], res0...)
-		rc.iv = append(pre, rc.iv[ilast+1:]...)
+		if len(res0) > 0 {
+			// len(res) must be 1
+			rc.iv[istart] = res0[0]
+		}
+		lost := 1 + (ilast - istart)
+		changeSize := int64(len(res0)) - lost
+		newSize := int64(len(rc.iv)) + changeSize
+		if changeSize != 0 {
+			copy(rc.iv[ilast+1+changeSize:], rc.iv[ilast+1:])
+		}
+		rc.iv = rc.iv[:newSize]
 		return
 
 	case !startAlready && lastAlready:
+		// we can only shrink or stay the same size
 		//p("case 4: !startAlready && lastAlready")
 		res1, _ := rc.iv[ilast].subtractInterval(del)
-		pre := append(origiv[:istart+1], res1...)
-		rc.iv = append(pre, rc.iv[ilast+1:]...)
-		rc.card = -1
+		lost := ilast - istart
+		changeSize := int64(len(res1)) - lost
+		newSize := int64(len(rc.iv)) + changeSize
+		if changeSize != 0 {
+			// move the tail first to make room for res1
+			copy(rc.iv[ilast+1+changeSize:], rc.iv[ilast+1:])
+		}
+		copy(rc.iv[istart+1:], res1)
+		rc.iv = rc.iv[:newSize]
 		return
 	}
 }
