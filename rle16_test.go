@@ -246,7 +246,7 @@ func TestRleIntersection16(t *testing.T) {
 
 	Convey("RunContainer16.intersect of two RunContainer16(s) should return their intersection", t, func() {
 		{
-			vals := []uint16{0, 2, 4, 6, 8, 10, 12, 14, 16, 18, UpperLimit16 - 3, UpperLimit16 - 1}
+			vals := []uint16{0, 2, 4, 6, 8, 10, 12, 14, 16, 18, MaxUint16 - 3, MaxUint16 - 1}
 
 			a := newRunContainer16FromVals(true, vals[:5]...)
 			b := newRunContainer16FromVals(true, vals[2:]...)
@@ -266,7 +266,7 @@ func TestRleIntersection16(t *testing.T) {
 			So(isect.contains(6), ShouldBeTrue)
 			So(isect.contains(8), ShouldBeTrue)
 
-			d := newRunContainer16TakeOwnership([]interval16{{start: 0, last: UpperLimit16}})
+			d := newRunContainer16TakeOwnership([]interval16{{start: 0, last: MaxUint16}})
 
 			isect = isect.intersect(d)
 			p("isect is %v", isect)

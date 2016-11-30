@@ -21,26 +21,12 @@ func p(format string, args ...interface{}) {
 	}
 }
 
-// MaxUint32 is only used internally for the endx
-// value when UpperLimit32 is stored; users should
-// only ever store up to UpperLimit32.
+// MaxUint32 is the largest uint32 value.
 const MaxUint32 = 4294967295
-
-// UpperLimit32 is the largest
-// integer we can store in an RunContainer32. As
-// we need to reserve one value for the open
-// interval endpoint endx, this is MaxUint32 - 1.
-const UpperLimit32 = MaxUint32 - 1
 
 // MaxUint16 is the largest 16 bit unsigned int.
 // This is the largest value an interval16 can store.
 const MaxUint16 = 65535
-
-// UpperLimit16 is the largest
-// integer we can store in an RunContainer16. As
-// we need to reserve one value for the open
-// interval endpoint endx, this is MaxUint16 - 1.
-const UpperLimit16 = MaxUint16 - 1
 
 // searchOptions allows us to accelerate runContainer32.search with
 // prior knowledge of (mostly lower) bounds. This is used by Union

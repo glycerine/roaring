@@ -246,7 +246,7 @@ func TestRleIntersection32(t *testing.T) {
 
 	Convey("RunContainer32.intersect of two RunContainer32(s) should return their intersection", t, func() {
 		{
-			vals := []uint32{0, 2, 4, 6, 8, 10, 12, 14, 16, 18, UpperLimit32 - 3, UpperLimit32 - 1}
+			vals := []uint32{0, 2, 4, 6, 8, 10, 12, 14, 16, 18, MaxUint32 - 3, MaxUint32 - 1}
 
 			a := newRunContainer32FromVals(true, vals[:5]...)
 			b := newRunContainer32FromVals(true, vals[2:]...)
@@ -266,7 +266,7 @@ func TestRleIntersection32(t *testing.T) {
 			So(isect.contains(6), ShouldBeTrue)
 			So(isect.contains(8), ShouldBeTrue)
 
-			d := newRunContainer32TakeOwnership([]interval32{{start: 0, last: UpperLimit32}})
+			d := newRunContainer32TakeOwnership([]interval32{{start: 0, last: MaxUint32}})
 
 			isect = isect.intersect(d)
 			p("isect is %v", isect)

@@ -1289,7 +1289,7 @@ func (rc *runContainer16) isubtract(del interval16) {
 			return
 		default:
 			// changeSize > 0 is only possible when ilast == istart.
-			// Hence we now know: changeSize == 1 and len(gained) == 2
+			// Hence we now know: changeSize == 1 and len(res0) == 2
 			rc.iv = append(rc.iv, interval16{})
 			// len(rc.iv) is correct now, no need to rc.iv = rc.iv[:newSize]
 
