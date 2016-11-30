@@ -94,7 +94,7 @@ func showHash(name string, h map[int]bool) {
 		stringH += fmt.Sprintf("%v, ", hv[i])
 	}
 
-	p("%s is (len %v): %s", name, len(h), stringH)
+	fmt.Printf("%s is (len %v): %s", name, len(h), stringH)
 }
 
 // trial is used in the randomized testing of runContainers

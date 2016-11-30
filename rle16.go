@@ -258,7 +258,7 @@ func newRunContainer16FromArray(arr *arrayContainer) *runContainer16 {
 func (rc *runContainer16) set(alreadySorted bool, vals ...uint16) {
 
 	rc2 := newRunContainer16FromVals(alreadySorted, vals...)
-	p("set: rc2 is %s", rc2)
+	//p("set: rc2 is %s", rc2)
 	un := rc.union(rc2)
 	rc.iv = un.iv
 	rc.card = 0
@@ -820,7 +820,7 @@ func (rc *runContainer16) Add(k uint16) (wasNew bool) {
 	k64 := int64(k)
 
 	index, present, _ := rc.search(k64, nil)
-	p("search returned index=%v, present=%v", index, present)
+	//p("search returned index=%v, present=%v", index, present)
 	if present {
 		return // already there
 	}
@@ -999,7 +999,7 @@ func (rc *runContainer16) deleteAt(curIndex *int64, curPosInIndex *uint16, curSe
 	// are we first, last, or in the middle of our interval16?
 	switch {
 	case pos == 0:
-		p("pos == 0, first")
+		//p("pos == 0, first")
 		if int64(rc.iv[ci].start) == int64(rc.iv[ci].last) {
 			// our interval disappears
 			rc.iv = append(rc.iv[:ci], rc.iv[ci+1:]...)
@@ -1013,12 +1013,12 @@ func (rc *runContainer16) deleteAt(curIndex *int64, curPosInIndex *uint16, curSe
 		// last
 		rc.iv[ci].last--
 		// our interval16 cannot disappear, else we would have been pos == 0, case first above.
-		p("deleteAt: pos is last case, curIndex=%v, curPosInIndex=%v", *curIndex, *curPosInIndex)
+		//p("deleteAt: pos is last case, curIndex=%v, curPosInIndex=%v", *curIndex, *curPosInIndex)
 		(*curPosInIndex)--
 		// if we leave *curIndex alone, then Next() will work properly even after the delete.
-		p("deleteAt: pos is last case, after update: curIndex=%v, curPosInIndex=%v", *curIndex, *curPosInIndex)
+		//p("deleteAt: pos is last case, after update: curIndex=%v, curPosInIndex=%v", *curIndex, *curPosInIndex)
 	default:
-		p("middle...split")
+		//p("middle...split")
 		//middle
 		// split into two, adding an interval16
 		new0 := interval16{
@@ -1033,8 +1033,8 @@ func (rc *runContainer16) deleteAt(curIndex *int64, curPosInIndex *uint16, curSe
 			start: uint16(new1start),
 			last:  rc.iv[ci].last}
 
-		p("new0 = %#v", new0)
-		p("new1 = %#v", new1)
+		//p("new0 = %#v", new0)
+		//p("new1 = %#v", new1)
 
 		tail := append([]interval16{new0, new1}, rc.iv[ci+1:]...)
 		rc.iv = append(rc.iv[:ci], tail...)
