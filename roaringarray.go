@@ -51,11 +51,7 @@ type container interface {
 
 // careful: range is [firstOfRange,lastOfRange]
 func rangeOfOnes(start, last int) container {
-	if (last - start + 1) > arrayDefaultMaxSize {
-		return newBitmapContainerwithRange(start, last)
-	}
-
-	return newArrayContainerRange(start, last)
+	return newRunContainerRange(uint16(start),uint16(last))
 }
 
 type roaringArray struct {
