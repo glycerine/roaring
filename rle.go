@@ -138,6 +138,13 @@ func (ah *addHelper32) add(cur, prev uint32, i int) {
 	}
 }
 
+// newRunContainerRange makes a new container made of just the specified closed interval [rangestart,rangelast]
+func newRunContainerRange(rangestart uint32, rangelast uint32) *runContainer32 {
+  rc := &runContainer32{}
+  rc.iv = append(rc.iv, interval32{start: rangestart, last: rangelast})
+  return rc
+}
+
 // newRunContainer32FromVals makes a new container from vals.
 //
 // For efficiency, vals should be sorted in ascending order.
@@ -181,6 +188,7 @@ func newRunContainer32FromVals(alreadySorted bool, vals ...uint32) *runContainer
 
 // newRunContainer32FromBitmapContainer makes a new run container from bc.
 func newRunContainer32FromBitmapContainer(bc *bitmapContainer) *runContainer32 {
+	// todo: this could be optimized, see https://github.com/RoaringBitmap/RoaringBitmap/blob/master/src/main/java/org/roaringbitmap/RunContainer.java#L145-L192
 
 	rc := &runContainer32{}
 	ah := addHelper32{rc: rc}
